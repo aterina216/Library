@@ -12,7 +12,7 @@ import androidx.room.RoomDatabase
 import com.example.library.R
 import com.example.library.adapters.BookAdapter
 import com.example.library.api.ApiClient
-import com.example.library.api.getPopularBooks
+import com.example.library.api.getRussianBooks
 import com.example.library.data.BookResponse
 import com.example.library.databinding.ActivityMainBinding
 import kotlinx.coroutines.CoroutineScope
@@ -48,7 +48,7 @@ class MainActivity : AppCompatActivity() {
     private fun loadPopularBooks() {
         lifecycleScope.launch {
             try {
-                val books = getPopularBooks()  // Получаем список книг
+                val books = getRussianBooks()  // Получаем список книг
                 Log.d("Books Count", "Количество книг: ${books.size}")  // Логируем количество книг
                 if (books.isNotEmpty()) {
                     bookAdapter = BookAdapter(books)  // Передаем книги в адаптер

@@ -9,7 +9,6 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.SimpleTarget
 import com.bumptech.glide.request.transition.Transition
 import com.example.library.R
-import com.example.library.api.getPopularBooks
 import com.example.library.data.Book
 import com.example.library.databinding.ItemBookBinding
 
