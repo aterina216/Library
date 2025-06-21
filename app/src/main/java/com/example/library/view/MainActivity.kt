@@ -5,13 +5,19 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import androidx.room.RoomDatabase
 import com.example.library.R
-import com.example.library.adapters.BooksAdapter
+import com.example.library.adapters.BookAdapter
 import com.example.library.api.ApiClient
+import com.example.library.api.getPopularBooks
 import com.example.library.data.BookResponse
 import com.example.library.databinding.ActivityMainBinding
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -20,47 +26,39 @@ import retrofit2.http.Query
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private lateinit var booksAdapter: BooksAdapter
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var bookAdapter: BookAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        booksAdapter = BooksAdapter(emptyList())
-        binding.recyclerView.layoutManager = LinearLayoutManager(this)
-        binding.recyclerView.adapter = booksAdapter
+        recyclerView = binding.recyclerView
+        recyclerView.layoutManager = LinearLayoutManager(this)
 
-        fetchBooks("kotlin")
+        // Инициализация адаптера для RecyclerView (пока пустой список)
+        bookAdapter = BookAdapter(emptyList())
+        recyclerView.adapter = bookAdapter
 
+        // Загружаем популярные книги
+        loadPopularBooks()
     }
 
-    private fun fetchBooks(query: String) {
-        ApiClient.apiService.getBooks(query).enqueue(object : Callback<BookResponse> {
-            override fun onResponse(call: Call<BookResponse>, response: Response<BookResponse>) {
-                if (response.isSuccessful) {
-                    Log.d("API", "Response successful: ${response.body()}")
-                    val books = response.body()?.docs ?: emptyList()
-
-                    // Обновляем адаптер только после получения данных
-                    if (books.isEmpty()) {
-                        Toast.makeText(this@MainActivity, "No books found", Toast.LENGTH_SHORT).show()
-                    }
-
-                    booksAdapter.updateBooks(books) // Обновляем данные в адаптере
+    private fun loadPopularBooks() {
+        lifecycleScope.launch {
+            try {
+                val books = getPopularBooks()  // Получаем список книг
+                Log.d("Books Count", "Количество книг: ${books.size}")  // Логируем количество книг
+                if (books.isNotEmpty()) {
+                    bookAdapter = BookAdapter(books)  // Передаем книги в адаптер
+                    recyclerView.adapter = bookAdapter  // Устанавливаем адаптер
                 } else {
-                    Log.e("API", "Error: ${response.message()}")
-                    Toast.makeText(this@MainActivity, "Error: ${response.message()}", Toast.LENGTH_SHORT).show()
-                    booksAdapter.updateBooks(emptyList()) // Показываем пустой список при ошибке
+                    Toast.makeText(this@MainActivity, "Нет данных для отображения", Toast.LENGTH_SHORT).show()
                 }
+            } catch (e: Exception) {
+                Toast.makeText(this@MainActivity, "Ошибка при загрузке данных", Toast.LENGTH_SHORT).show()
             }
-
-            override fun onFailure(call: Call<BookResponse>, t: Throwable) {
-                Log.e("API", "Failure: ${t.message}", t)
-                Toast.makeText(this@MainActivity, "Failure: ${t.message}", Toast.LENGTH_SHORT).show()
-                booksAdapter.updateBooks(emptyList()) // Показываем пустой список при ошибке сети
-            }
-        })
+        }
     }
 }
