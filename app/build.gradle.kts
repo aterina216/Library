@@ -65,5 +65,6 @@ dependencies {
     implementation ("androidx.room:room-ktx:2.6.0")
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation ("com.squareup.picasso:picasso:2.8")
+    implementation ("org.jsoup:jsoup:1.15.3")
 
 }
