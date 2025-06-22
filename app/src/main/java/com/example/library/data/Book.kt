@@ -7,8 +7,8 @@ import java.net.URL
 
 data class Book(
     val title: String,
-    val author_name: String,
-    val first_publish_year: String,
-    val coverUrl: String?
+    val author_name: List<String>,  // список авторов
+    val first_publish_year: String?,
+    val cover_i: Int?  // ID обложки
 )
 

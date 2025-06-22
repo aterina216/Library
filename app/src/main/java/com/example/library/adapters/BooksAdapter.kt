@@ -20,22 +20,28 @@ class BookAdapter(private val books: List<Book>) : RecyclerView.Adapter<BookAdap
     }
 
     override fun onBindViewHolder(holder: BookViewHolder, position: Int) {
-        val book = books[position]  // Получаем книгу по позиции
+        val book = books[position]
         holder.binding.apply {
-            titleTextView.text = book.title  // Название книги
-            authorTextView.text = book.author_name  // Автор
-            publishYearTextView.text = "Year: ${book.first_publish_year}"  // Год издания
+            titleTextView.text = book.title
+            authorTextView.text = book.author_name.joinToString(", ")
+            publishYearTextView.text = "Year: ${book.first_publish_year ?: "Unknown Year"}"
 
-            // Загружаем изображение с URL
+            // Обработаем загрузку изображения
+            val coverUrl = if (book.cover_i != null) {
+                "https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg"
+            } else {
+                "https://via.placeholder.com/100x150?text=No+Cover"
+            }
+
             Glide.with(holder.itemView.context)
-                .load(book.coverUrl)  // Загружаем картинку по URL
+                .load(coverUrl)
                 .placeholder(R.drawable.outline_book_5_24)
                 .error(R.drawable.outline_book_5_24)
                 .into(coverImageView)
         }
     }
 
-    override fun getItemCount(): Int = books.size  // Количество элементов в списке
+    override fun getItemCount(): Int = books.size
 
     class BookViewHolder(val binding: ItemBookBinding) : RecyclerView.ViewHolder(binding.root)
 }

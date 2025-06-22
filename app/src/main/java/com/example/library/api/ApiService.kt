@@ -8,7 +8,8 @@ import retrofit2.http.Query
 
 interface ApiService {
     @GET("search.json")
-    fun getBooks(
-        @Query("q") query: String // Параметр должен быть строкой
-    ): Call<BookResponse>
+    suspend fun getBooks(
+        @Query("q") query: String = "fiction", // фильтруем по ключевому слову "fiction"
+        @Query("limit") limit: Int = 100 // указываем лимит на количество книг
+    ): BookResponse
 }
