@@ -40,44 +40,22 @@ class MainActivity : AppCompatActivity() {
         loadPopularBooks()
     }
 
-    override fun onStart() {
-        super.onStart()
-        Log.d("MainActivity", "onStart: Активность запускается")
-    }
-
     override fun onResume() {
         super.onResume()
-        // Восстанавливаем видимость RecyclerView, когда фрагмент возвращается
-        binding.recyclerView.visibility = View.VISIBLE
-    }
-    override fun onPause() {
-        super.onPause()
-        Log.d("MainActivity", "onPause: Активность приостановлена")
-
-        // Проверка, если RecyclerView скрыт, восстанавливаем
+        // Восстанавливаем видимость RecyclerView, если он скрыт
         if (binding.recyclerView.visibility == View.GONE) {
             binding.recyclerView.visibility = View.VISIBLE
-            Log.d("MainActivity", "RecyclerView восстановлен в onPause")
+            Log.d("MainActivity", "RecyclerView восстановлен в onResume")
         }
-    }
-
-    override fun onStop() {
-        super.onStop()
-        Log.d("MainActivity", "onStop: Активность остановлена")
     }
 
     override fun onBackPressed() {
         super.onBackPressed()
         Log.d("MainActivity", "onBackPressed: Нажата кнопка назад")
 
-        // После возврата с фрагмента проверяем состояние back stack
         if (supportFragmentManager.backStackEntryCount == 0) {
             Log.d("MainActivity", "Возвращаемся на главный экран, показываем RecyclerView")
-
-            // Задаем видимость RecyclerView на главном экране
             binding.recyclerView.visibility = View.VISIBLE
-
-            // Обновляем адаптер (если необходимо)
             if (books.isNotEmpty()) {
                 bookAdapter.notifyDataSetChanged()
                 Log.d("MainActivity", "Адаптер обновлен")
@@ -88,11 +66,10 @@ class MainActivity : AppCompatActivity() {
     private fun openBookDetailFragment(book: Book) {
         // Логируем процесс открытия фрагмента
         Log.d("MainActivity", "Открытие фрагмента: Скрытие RecyclerView")
-        binding.recyclerView.visibility = View.GONE
+        //binding.recyclerView.visibility = View.GONE
 
         val fragment = DetailBookFragment.newInstance(book)
 
-        // Проверка, существует ли уже этот фрагмент
         if (supportFragmentManager.findFragmentByTag(fragment::class.java.simpleName) == null) {
             val transaction = supportFragmentManager.beginTransaction()
             transaction.replace(R.id.fragment_container, fragment, fragment::class.java.simpleName)
@@ -107,17 +84,14 @@ class MainActivity : AppCompatActivity() {
     private fun loadPopularBooks() {
         lifecycleScope.launch {
             try {
-                // Получаем список книг
                 books = getRussianBooks()
                 Log.d("MainActivity", "Книги загружены: $books")
 
-                // Если книги загружены, обновляем адаптер
                 if (books.isNotEmpty()) {
                     bookAdapter = BookAdapter(books) { book ->
                         openBookDetailFragment(book)
                     }
                     recyclerView.adapter = bookAdapter
-                    // Показываем RecyclerView только после успешной загрузки данных
                     binding.recyclerView.visibility = View.VISIBLE
                     Log.d("MainActivity", "RecyclerView показан")
                 } else {
