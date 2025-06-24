@@ -1,9 +1,9 @@
 package com.example.library.data
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import org.json.JSONObject
-import java.net.URL
+import android.os.Parcel
+import android.os.Parcelable
+import androidx.versionedparcelable.VersionedParcelize
+import java.util.ArrayList
 
 data class Book(
     val title: String,

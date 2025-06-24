@@ -2,26 +2,18 @@ package com.example.library.view
 
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.room.RoomDatabase
 import com.example.library.R
 import com.example.library.adapters.BookAdapter
-import com.example.library.api.ApiClient
 import com.example.library.api.getRussianBooks
-import com.example.library.data.BookResponse
+import com.example.library.data.Book
 import com.example.library.databinding.ActivityMainBinding
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
-import retrofit2.http.Query
 
 class MainActivity : AppCompatActivity() {
 
