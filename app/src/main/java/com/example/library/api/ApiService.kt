@@ -10,6 +10,6 @@ interface ApiService {
     @GET("search.json")
     suspend fun getBooks(
         @Query("q") query: String = "fiction", // фильтруем по ключевому слову "fiction"
-        @Query("limit") limit: Int = 100 // указываем лимит на количество книг
+        @Query("limit") limit: Int = 1000 // указываем лимит на количество книг
     ): BookResponse
 }
