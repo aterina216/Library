@@ -12,7 +12,8 @@ import com.example.library.R
 import com.example.library.data.Book
 import com.example.library.databinding.ItemBookBinding
 
-class BookAdapter(private val books: List<Book>) : RecyclerView.Adapter<BookAdapter.BookViewHolder>() {
+class BookAdapter(private var books: List<Book>,
+                  private val onClick: (Book) -> Unit) : RecyclerView.Adapter<BookAdapter.BookViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BookViewHolder {
         val binding = ItemBookBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -39,9 +40,17 @@ class BookAdapter(private val books: List<Book>) : RecyclerView.Adapter<BookAdap
                 .error(R.drawable.outline_book_5_24)
                 .into(coverImageView)
         }
+        holder.binding.root.setOnClickListener {
+            onClick(book)
+        }
     }
 
     override fun getItemCount(): Int = books.size
+
+    fun updateBooks(newBooks: List<Book>) {
+        books = newBooks
+        notifyDataSetChanged()
+    }
 
     class BookViewHolder(val binding: ItemBookBinding) : RecyclerView.ViewHolder(binding.root)
 }
