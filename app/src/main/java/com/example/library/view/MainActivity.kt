@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.library.R
 import com.example.library.adapters.BookAdapter
+import com.example.library.api.getBooksWithDescription
 import com.example.library.api.getRussianBooks
 import com.example.library.data.Book
 import com.example.library.databinding.ActivityMainBinding
@@ -84,7 +85,7 @@ class MainActivity : AppCompatActivity() {
     private fun loadPopularBooks() {
         lifecycleScope.launch {
             try {
-                books = getRussianBooks()
+                books = getBooksWithDescription()
                 Log.d("MainActivity", "Книги загружены: $books")
 
                 if (books.isNotEmpty()) {

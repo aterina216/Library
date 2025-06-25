@@ -6,11 +6,14 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.example.library.R
+import com.example.library.api.getBooksWithDescription
 import com.example.library.data.Book
 import com.example.library.databinding.FragmentDetailBookBinding
 import com.example.library.databinding.ItemBookBinding
+import kotlinx.coroutines.launch
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -40,9 +43,9 @@ class DetailBookFragment : Fragment() {
 
         // Если книга не null, заполняем данные
         book?.let {
-            binding.titleTextView.text = it.title
-            binding.authorTextView.text = it.author_name?.joinToString(", ")
-            binding.publishYearTextView.text = "Year: ${it.first_publish_year ?: "Unknown Year"}"
+            binding.bookTitle.text = it.title
+            binding.bookAuthor.text = it.author_name.joinToString(", ")
+            binding.bookPublishYear.text = "Year: ${it.first_publish_year ?: "Unknown Year"}"
 
             // Здесь можно загрузить изображение обложки
             val coverUrl = if (it.cover_i != null) {
@@ -53,7 +56,10 @@ class DetailBookFragment : Fragment() {
 
             Glide.with(requireContext())
                 .load(coverUrl)
-                .into(binding.coverImageView)
+                .into(binding.bookCoverImage)
+
+            // Отображаем описание
+            binding.bookDescription.text = it.description ?: "Описание не доступно"
         }
 
         return binding.root
