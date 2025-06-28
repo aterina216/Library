@@ -5,9 +5,11 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.replace
+import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -19,6 +21,10 @@ import com.example.library.databinding.ActivityMainBinding
 import com.example.library.view.fragments.DetailBookFragment
 import com.example.library.view.fragments.MyBookFragment
 import com.example.library.view.fragments.SearchFragment
+import com.example.library.viewmodels.BookViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
@@ -26,35 +32,48 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var recyclerView: RecyclerView
     private lateinit var bookAdapter: BookAdapter
-    private var books: List<Book> = emptyList()
+
+    private val bookViewModel: BookViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Инициализация RecyclerView
         recyclerView = binding.recyclerView
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // Инициализация адаптера с пустым списком
-        bookAdapter = BookAdapter(books) { book ->
-            openBookDetailFragment(book)
+        // Инициализация адаптера
+        bookAdapter = BookAdapter(emptyList()) { book ->
+            openBookDetailFragment(book)  // Открытие подробной информации о книге
         }
         recyclerView.adapter = bookAdapter
 
-        // Загружаем книги
-        loadPopularBooks()
+        // Наблюдаем за изменениями в данных
+        bookViewModel.books.observe(this, Observer { books ->
+            if (books.isNotEmpty()) {
+                // Обновляем данные в адаптере
+                bookAdapter.updateBooks(books)
+                recyclerView.visibility = View.VISIBLE
+            } else {
+                // Показываем сообщение, если данных нет
+                Toast.makeText(this@MainActivity, "Нет данных для отображения", Toast.LENGTH_SHORT).show()
+            }
+        })
 
-        binding.bottomNavigationView.setOnNavigationItemSelectedListener {
-            item ->
-            when(item.itemId){
+        // Загружаем книги
+        bookViewModel.loadBooks()
+
+        // Обработка кликов на элементы BottomNavigation
+        binding.bottomNavigationView.setOnNavigationItemSelectedListener { item ->
+            when (item.itemId) {
                 R.id.nav_home -> {
                     val intent = Intent(this, MainActivity::class.java)
                     startActivity(intent)
-                    finish()
                     true
                 }
-                R.id.nav_my_books ->{
+                R.id.nav_my_books -> {
                     loadFragment(MyBookFragment())
                     true
                 }
@@ -65,76 +84,26 @@ class MainActivity : AppCompatActivity() {
                 else -> false
             }
         }
-
     }
 
-    override fun onResume() {
-        super.onResume()
-        // Восстанавливаем видимость RecyclerView, если он скрыт
-        if (binding.recyclerView.visibility == View.GONE) {
-            binding.recyclerView.visibility = View.VISIBLE
-            Log.d("MainActivity", "RecyclerView восстановлен в onResume")
-        }
-    }
-
-    override fun onBackPressed() {
-        super.onBackPressed()
-        Log.d("MainActivity", "onBackPressed: Нажата кнопка назад")
-
-        if (supportFragmentManager.backStackEntryCount == 0) {
-            Log.d("MainActivity", "Возвращаемся на главный экран, показываем RecyclerView")
-            binding.recyclerView.visibility = View.VISIBLE
-            if (books.isNotEmpty()) {
-                bookAdapter.notifyDataSetChanged()
-                Log.d("MainActivity", "Адаптер обновлен")
-            }
-        }
-    }
-
+    // Открытие фрагмента с деталями книги
     private fun openBookDetailFragment(book: Book) {
-        // Логируем процесс открытия фрагмента
-        Log.d("MainActivity", "Открытие фрагмента: Скрытие RecyclerView")
-        //binding.recyclerView.visibility = View.GONE
-
         val fragment = DetailBookFragment.newInstance(book)
 
         if (supportFragmentManager.findFragmentByTag(fragment::class.java.simpleName) == null) {
             val transaction = supportFragmentManager.beginTransaction()
             transaction.replace(R.id.fragment_container, fragment, fragment::class.java.simpleName)
-                .addToBackStack(null) // Добавляем в стек
+                .addToBackStack(null)  // Добавляем в стек фрагментов
                 .commit()
-            Log.d("MainActivity", "Фрагмент добавлен в транзакцию")
-        } else {
-            Log.d("MainActivity", "Фрагмент уже существует, не заменяем")
         }
     }
 
-    private fun loadPopularBooks() {
-        lifecycleScope.launch {
-            try {
-                books = getBooksWithDescription()
-                Log.d("MainActivity", "Книги загружены: $books")
-
-                if (books.isNotEmpty()) {
-                    bookAdapter = BookAdapter(books) { book ->
-                        openBookDetailFragment(book)
-                    }
-                    recyclerView.adapter = bookAdapter
-                    binding.recyclerView.visibility = View.VISIBLE
-                    Log.d("MainActivity", "RecyclerView показан")
-                } else {
-                    Toast.makeText(this@MainActivity, "Нет данных для отображения", Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, "Ошибка при загрузке данных", Toast.LENGTH_SHORT).show()
-                Log.e("MainActivity", "Ошибка при загрузке данных", e)
-            }
-        }
-    }
-
-    private fun loadFragment(fragmnent: Fragment){
+    // Загрузка нового фрагмента
+    private fun loadFragment(fragment: Fragment) {
         val transaction = supportFragmentManager.beginTransaction()
-        transaction.replace(R.id.fragment_container, fragmnent)
+        transaction.replace(R.id.fragment_container, fragment)
         transaction.commit()
     }
 }
+
+
