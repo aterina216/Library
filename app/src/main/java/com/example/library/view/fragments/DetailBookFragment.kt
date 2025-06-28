@@ -1,4 +1,4 @@
-package com.example.library.view
+package com.example.library.view.fragments
 
 import android.os.Bundle
 import android.util.Log
@@ -6,14 +6,9 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
-import com.example.library.R
-import com.example.library.api.getBooksWithDescription
 import com.example.library.data.Book
 import com.example.library.databinding.FragmentDetailBookBinding
-import com.example.library.databinding.ItemBookBinding
-import kotlinx.coroutines.launch
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER

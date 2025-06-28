@@ -1,19 +1,24 @@
 package com.example.library.view
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.replace
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.library.R
 import com.example.library.adapters.BookAdapter
 import com.example.library.api.getBooksWithDescription
-import com.example.library.api.getRussianBooks
 import com.example.library.data.Book
 import com.example.library.databinding.ActivityMainBinding
+import com.example.library.view.fragments.DetailBookFragment
+import com.example.library.view.fragments.MyBookFragment
+import com.example.library.view.fragments.SearchFragment
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
@@ -39,6 +44,28 @@ class MainActivity : AppCompatActivity() {
 
         // Загружаем книги
         loadPopularBooks()
+
+        binding.bottomNavigationView.setOnNavigationItemSelectedListener {
+            item ->
+            when(item.itemId){
+                R.id.nav_home -> {
+                    val intent = Intent(this, MainActivity::class.java)
+                    startActivity(intent)
+                    finish()
+                    true
+                }
+                R.id.nav_my_books ->{
+                    loadFragment(MyBookFragment())
+                    true
+                }
+                R.id.nav_search -> {
+                    loadFragment(SearchFragment())
+                    true
+                }
+                else -> false
+            }
+        }
+
     }
 
     override fun onResume() {
@@ -103,5 +130,11 @@ class MainActivity : AppCompatActivity() {
                 Log.e("MainActivity", "Ошибка при загрузке данных", e)
             }
         }
+    }
+
+    private fun loadFragment(fragmnent: Fragment){
+        val transaction = supportFragmentManager.beginTransaction()
+        transaction.replace(R.id.fragment_container, fragmnent)
+        transaction.commit()
     }
 }
