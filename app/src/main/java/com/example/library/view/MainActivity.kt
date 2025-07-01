@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.replace
 import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -18,6 +19,8 @@ import com.example.library.adapters.BookAdapter
 import com.example.library.api.ApiClient
 import com.example.library.api.getBooksWithDescription
 import com.example.library.data.Book
+import com.example.library.data.BookRepository
+import com.example.library.data.BookViewModelFactory
 import com.example.library.databinding.ActivityMainBinding
 import com.example.library.view.fragments.DetailBookFragment
 import com.example.library.view.fragments.MyBookFragment
@@ -33,8 +36,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var recyclerView: RecyclerView
     private lateinit var bookAdapter: BookAdapter
+    private lateinit var bookViewModel: BookViewModel
+    private lateinit var repository: BookRepository
 
-    private val bookViewModel: BookViewModel by viewModels()
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,6 +49,12 @@ class MainActivity : AppCompatActivity() {
         // Инициализация RecyclerView
         recyclerView = binding.recyclerView
         recyclerView.layoutManager = LinearLayoutManager(this)
+
+        repository = BookRepository()
+        val factory = BookViewModelFactory(repository)
+
+        // Получаем ViewModel через фабрику
+        bookViewModel = ViewModelProvider(this, factory).get(BookViewModel::class.java)
 
         // Инициализация адаптера
         bookAdapter = BookAdapter(emptyList()) { book ->
