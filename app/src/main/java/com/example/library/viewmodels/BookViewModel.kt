@@ -15,21 +15,21 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
-class BookViewModel(private val repo: BookRepository) : ViewModel() {
-
+class BookViewModel(private val repository: BookRepository) : ViewModel() {
     private val _books = MutableLiveData<List<Book>>()
     val books: LiveData<List<Book>> get() = _books
 
-    private var job: Job? = null
+    // Флаг, чтобы не загружать книги повторно, если они уже загружены
+    private var booksLoaded = false
 
-    // Используем viewModelScope для запуска корутины
     fun loadBooks() {
-        job = viewModelScope.launch {
+        if (booksLoaded) return  // Если книги уже загружены, не загружаем снова
+
+        viewModelScope.launch {
             try {
-                // Загружаем книги из репозитория
-                val booksList = repo.loadBooks()
-                // Обновляем LiveData с полученными книгами
+                val booksList = repository.loadBooks()
                 _books.value = booksList
+                booksLoaded = true
             } catch (e: Exception) {
                 Log.e("BookViewModel", "Error loading books", e)
             }
