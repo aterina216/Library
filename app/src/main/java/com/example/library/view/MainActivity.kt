@@ -23,6 +23,7 @@ import com.example.library.data.BookRepository
 import com.example.library.data.BookViewModelFactory
 import com.example.library.databinding.ActivityMainBinding
 import com.example.library.view.fragments.DetailBookFragment
+import com.example.library.view.fragments.HomeFragment
 import com.example.library.view.fragments.MyBookFragment
 import com.example.library.view.fragments.SearchFragment
 import com.example.library.viewmodels.BookViewModel
@@ -34,56 +35,22 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var bookAdapter: BookAdapter
-    private lateinit var bookViewModel: BookViewModel
-    private lateinit var repository: BookRepository
-
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Инициализация RecyclerView
-        recyclerView = binding.recyclerView
-        recyclerView.layoutManager = LinearLayoutManager(this)
-
-        repository = BookRepository()
-        val factory = BookViewModelFactory(repository)
-
-        // Получаем ViewModel через фабрику
-        bookViewModel = ViewModelProvider(this, factory).get(BookViewModel::class.java)
-
-        // Инициализация адаптера
-        bookAdapter = BookAdapter(emptyList()) { book ->
-            openBookDetailFragment(book)  // Открытие подробной информации о книге
+        // Загрузка HomeFragment при старте приложения
+        if (savedInstanceState == null) {
+            loadFragment(HomeFragment())
         }
-        recyclerView.adapter = bookAdapter
-
-        // Наблюдаем за изменениями в данных
-        bookViewModel.books.observe(this, Observer { books ->
-            if (books.isNotEmpty()) {
-                // Обновляем данные в адаптере
-                bookAdapter.updateBooks(books)
-                recyclerView.visibility = View.VISIBLE
-            } else {
-                // Показываем сообщение, если данных нет
-                Toast.makeText(this@MainActivity, "Нет данных для отображения", Toast.LENGTH_SHORT).show()
-            }
-        })
-
-        // Загружаем книги
-        bookViewModel.loadBooks()
 
         // Обработка кликов на элементы BottomNavigation
         binding.bottomNavigationView.setOnNavigationItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> {
-                    val intent = Intent(this, MainActivity::class.java)
-                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    startActivity(intent)
+                    loadFragment(HomeFragment()) // Открытие HomeFragment
                     true
                 }
                 R.id.nav_my_books -> {
@@ -96,18 +63,6 @@ class MainActivity : AppCompatActivity() {
                 }
                 else -> false
             }
-        }
-    }
-
-    // Открытие фрагмента с деталями книги
-    private fun openBookDetailFragment(book: Book) {
-        val fragment = DetailBookFragment.newInstance(book)
-
-        if (supportFragmentManager.findFragmentByTag(fragment::class.java.simpleName) == null) {
-            val transaction = supportFragmentManager.beginTransaction()
-            transaction.replace(R.id.fragment_container, fragment, fragment::class.java.simpleName)
-                .addToBackStack(null)  // Добавляем в стек фрагментов
-                .commit()
         }
     }
 
