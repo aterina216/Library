@@ -12,7 +12,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.library.R
 import com.example.library.adapters.BookAdapter
+import com.example.library.api.ApiClient
 import com.example.library.data.Book
+import com.example.library.data.BookDatabase
 import com.example.library.data.BookRepository
 import com.example.library.data.BookViewModelFactory
 import com.example.library.databinding.FragmentHomeBinding
@@ -33,7 +35,14 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         recyclerView = binding.recyclerView
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
 
-        repository = BookRepository()
+        // Предположим, что у нас есть ApiService и BookDao, которые нужно передать
+        val apiService = ApiClient.apiService  // Получаем экземпляр ApiService
+        val bookDao = BookDatabase.getDatabase(requireContext()).bookDao()  // Получаем экземпляр DAO из базы данных
+
+        // Создаем репозиторий, передавая зависимости
+        repository = BookRepository(apiService, bookDao)
+
+        // Создаем фабрику ViewModel с репозиторием
         val factory = BookViewModelFactory(repository)
 
         // Получаем ViewModel через фабрику
@@ -73,3 +82,4 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         }
     }
 }
+

@@ -22,17 +22,26 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
     // Флаг, чтобы не загружать книги повторно, если они уже загружены
     private var booksLoaded = false
 
+    // Загрузка книг с описанием
     fun loadBooks() {
         if (booksLoaded) return  // Если книги уже загружены, не загружаем снова
 
         viewModelScope.launch {
             try {
+                // Вызываем метод загрузки книг с описанием
                 val booksList = repository.loadBooks()
                 _books.value = booksList
                 booksLoaded = true
             } catch (e: Exception) {
                 Log.e("BookViewModel", "Error loading books", e)
+                // Можно также обновить UI с ошибкой, если нужно
             }
         }
+    }
+
+    // Очистка данных, если нужно перезагрузить
+    fun clearBooks() {
+        _books.value = emptyList()
+        booksLoaded = false
     }
 }
