@@ -1,6 +1,7 @@
 package com.example.library.view.fragments
 
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -66,7 +67,15 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             }
         })
 
-        // Загружаем книги
+        // Загружаем книги, если они ещё не были загружены
+        bookViewModel.loadBooks()
+
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Log.d("HomeFragment", "onResume: Загружаем книги...")
+        // Перезагружаем данные, когда фрагмент становится видимым
         bookViewModel.loadBooks()
     }
 
@@ -74,12 +83,11 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private fun openBookDetailFragment(book: Book) {
         val fragment = DetailBookFragment.newInstance(book)
 
-        if (parentFragmentManager.findFragmentByTag(fragment::class.java.simpleName) == null) {
-            val transaction = parentFragmentManager.beginTransaction()
+        if (requireActivity().supportFragmentManager.findFragmentByTag(fragment::class.java.simpleName) == null) {
+            val transaction = requireActivity().supportFragmentManager.beginTransaction()
             transaction.replace(R.id.fragment_container, fragment, fragment::class.java.simpleName)
                 .addToBackStack(null)  // Добавляем в стек фрагментов
                 .commit()
         }
     }
 }
-

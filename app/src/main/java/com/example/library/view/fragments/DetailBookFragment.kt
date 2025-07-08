@@ -36,13 +36,11 @@ class DetailBookFragment : Fragment() {
         // Получаем книгу из arguments
         val book = arguments?.getParcelable<Book>(ARG_BOOK)
 
-        // Если книга не null, заполняем данные
         book?.let {
             binding.bookTitle.text = it.title
             binding.bookAuthor.text = it.author_name.joinToString(", ")
             binding.bookPublishYear.text = "Year: ${it.first_publish_year ?: "Unknown Year"}"
 
-            // Здесь можно загрузить изображение обложки
             val coverUrl = if (it.cover_i != null) {
                 "https://covers.openlibrary.org/b/id/${it.cover_i}-L.jpg"
             } else {
@@ -53,7 +51,6 @@ class DetailBookFragment : Fragment() {
                 .load(coverUrl)
                 .into(binding.bookCoverImage)
 
-            // Отображаем описание
             binding.bookDescription.text = it.description ?: "Описание не доступно"
         }
 
@@ -71,10 +68,5 @@ class DetailBookFragment : Fragment() {
             fragment.arguments = bundle
             return fragment
         }
-    }
-
-    override fun onDetach() {
-        super.onDetach()
-        Log.d("DetailBookFragment", "Фрагмент отсоединяется от активности")
     }
 }

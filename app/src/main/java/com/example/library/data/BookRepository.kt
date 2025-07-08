@@ -17,8 +17,14 @@ class BookRepository(private val apiService: ApiService, private val bookDao: Bo
 
     // Метод для загрузки книг с описанием
     suspend fun loadBooks(): List<Book> {
+        // Сначала пытаемся получить данные из базы
+        val cachedBooks = bookDao.getAllBooks()  // Получаем книги из базы данных
+        if (cachedBooks.isNotEmpty()) {
+            return cachedBooks  // Если книги есть в базе, возвращаем их
+        }
+
         try {
-            // Загружаем книги с описанием с помощью функции getBooksWithDescription
+            // Если в базе нет данных, делаем запрос к API
             val booksWithDescription = getBooksWithDescription()
 
             // Сохраняем книги с описанием в базу данных, если это необходимо
@@ -33,7 +39,7 @@ class BookRepository(private val apiService: ApiService, private val bookDao: Bo
         }
     }
 
-    // Функция, которая уже у тебя есть, загружает книги с описаниями
+    // Функция для получения книг с описанием
     private suspend fun getBooksWithDescription(): List<Book> {
         val books = mutableListOf<Book>()
         try {
@@ -68,3 +74,4 @@ class BookRepository(private val apiService: ApiService, private val bookDao: Bo
         return books
     }
 }
+

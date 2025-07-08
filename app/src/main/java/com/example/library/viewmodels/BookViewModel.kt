@@ -16,17 +16,21 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 class BookViewModel(private val repository: BookRepository) : ViewModel() {
+
     private val _books = MutableLiveData<List<Book>>()
     val books: LiveData<List<Book>> get() = _books
 
-    // Флаг, чтобы не загружать книги повторно, если они уже загружены
     private var booksLoaded = false
+    private var isLoading = false
 
-    // Загрузка книг с описанием
+    // Загрузка книг
     fun loadBooks() {
-        if (booksLoaded) return  // Если книги уже загружены, не загружаем снова
+        // Проверяем, не загружаются ли уже книги и не были ли они загружены
+        if (booksLoaded || isLoading) return  // Не загружаем, если уже загружены или в процессе загрузки
 
+        isLoading = true
         viewModelScope.launch {
+            Log.d("BookViewModel", "loadBooks: Начинаем загрузку книг")
             try {
                 // Вызываем метод загрузки книг с описанием
                 val booksList = repository.loadBooks()
@@ -34,14 +38,17 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
                 booksLoaded = true
             } catch (e: Exception) {
                 Log.e("BookViewModel", "Error loading books", e)
-                // Можно также обновить UI с ошибкой, если нужно
+                // Можно обработать ошибку здесь, например, показать Toast
+            } finally {
+                isLoading = false
             }
         }
     }
 
-    // Очистка данных, если нужно перезагрузить
+    // Очистка данных и сброс состояния
     fun clearBooks() {
         _books.value = emptyList()
         booksLoaded = false
     }
 }
+
