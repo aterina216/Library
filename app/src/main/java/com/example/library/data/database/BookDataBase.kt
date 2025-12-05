@@ -1,10 +1,11 @@
-package com.example.library.data.database.entity
+package com.example.library.data.database
 
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.library.data.database.dao.BookDao
+import com.example.library.data.database.entity.BookEntity
 
 @Database(entities = [BookEntity::class], exportSchema = false, version = 1)
 abstract class BookDataBase: RoomDatabase() {

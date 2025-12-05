@@ -18,7 +18,7 @@ class ViewModelModule {
 
     @Singleton
     @Provides
-    fun provideViewModel(repository: BookRepository): BookViewModel {
+    fun providesViewModel(repository: BookRepository): BookViewModel {
         return BookViewModel(repository)
     }
 }

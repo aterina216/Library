@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModelProvider.Factory
 import com.example.library.data.repository.BookRepository
 
 class ViewModelFactory (
-    private val repository: BookRepository
+    val repository: BookRepository
 ) : ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {

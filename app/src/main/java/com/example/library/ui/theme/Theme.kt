@@ -3,34 +3,52 @@ package com.example.library.ui.theme
 import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.library.ui.theme.Typography
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = DarkPrimary,
+    secondary = DarkSecondary,
+    tertiary = DarkAccent,
+    background = DarkBackground,
+    surface = DarkSurface,
+    onPrimary = DarkOnPrimary,
+    onSecondary = DarkOnBackground,
+    onBackground = DarkOnBackground,
+    onSurface = DarkOnBackground,
+
+    surfaceVariant = DarkSilver,
+    outline = Color(0xFF5A5670)
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = LightPrimary,
+    secondary = LightSecondary,
+    tertiary = LightAccent,
+    background = LightBackground,
+    surface = LightSurface,
+    onPrimary = LightOnPrimary,
+    onSecondary = LightOnBackground,
+    onBackground = LightOnBackground,
+    onSurface = LightOnBackground,
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    // Опционально
+    surfaceVariant = LightSilver,
+    outline = Color(0xFFC7C2D6)
 )
 
 @Composable
@@ -54,5 +72,43 @@ fun LibraryTheme(
         colorScheme = colorScheme,
         typography = Typography,
         content = content
+    )
+
+    val Shapes = Shapes(
+        extraSmall = RoundedCornerShape(4.dp),
+        small = RoundedCornerShape(8.dp),
+        medium = RoundedCornerShape(12.dp),
+        large = RoundedCornerShape(16.dp),
+        extraLarge = RoundedCornerShape(24.dp)
+    )
+
+    val Typography = _root_ide_package_.androidx.compose.material3.Typography(
+        displayLarge = TextStyle(
+            fontFamily = FontFamily.Default,
+            fontWeight = FontWeight.Bold,
+            fontSize = 57.sp,
+            lineHeight = 64.sp,
+            letterSpacing = (-0.25).sp
+        ),
+        titleLarge = TextStyle(
+            fontFamily = FontFamily.Default,
+            fontWeight = FontWeight.Bold,
+            fontSize = 22.sp,
+            lineHeight = 28.sp
+        ),
+        bodyLarge = TextStyle(
+            fontFamily = FontFamily.Default,
+            fontWeight = FontWeight.Normal,
+            fontSize = 16.sp,
+            lineHeight = 24.sp,
+            letterSpacing = 0.5.sp
+        ),
+        labelLarge = TextStyle(
+            fontFamily = FontFamily.Default,
+            fontWeight = FontWeight.Medium,
+            fontSize = 14.sp,
+            lineHeight = 20.sp,
+            letterSpacing = 0.1.sp
+        )
     )
 }

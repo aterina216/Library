@@ -4,7 +4,7 @@ import android.app.Application
 import android.content.Context
 import androidx.room.Room
 import com.example.library.data.database.dao.BookDao
-import com.example.library.data.database.entity.BookDataBase
+import com.example.library.data.database.BookDataBase
 import dagger.Module
 import dagger.Provides
 import javax.inject.Singleton
