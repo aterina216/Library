@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.library.ui.navigation.InitNavigation
 import com.example.library.ui.screens.HomeScreen
 import com.example.library.ui.theme.LibraryTheme
 import com.example.library.ui.viewmodels.BookViewModel
@@ -35,7 +36,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
 
-            LibraryTheme { HomeScreen(viewModel) }
+            LibraryTheme { InitNavigation(viewModel) }
 
         }
     }
