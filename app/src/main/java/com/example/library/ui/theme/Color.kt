@@ -27,3 +27,6 @@ val DarkOnPrimary = Color.Black           // Текст на фиолетово�
 val DarkOnBackground = Color(0xFFE6E1FF)  // Светлый текст
 val DarkSilver = Color(0xFFB0B0C0)        // Серебристый в темной теме
 val DarkAccent = Color(0xFFFFB74D)
+
+val LightBottomBar = Color(0xFFD3CEE3)    // Бар светлее фона, но темнее основного фона
+val DarkBottomBar = Color(0xFF1A1638)       // Бар темнее основного фона в темной теме

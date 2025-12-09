@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.BottomAppBar
+import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.Person
@@ -46,14 +49,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.os.registerForAllProfilingResults
+import androidx.navigation.NavController
 import androidx.room.util.TableInfo
 import coil.compose.AsyncImage
+import com.example.library.R
 import com.example.library.data.database.entity.BookEntity
 import com.example.library.data.models.Book
+import java.net.URLEncoder
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun BookCard(book: BookEntity) {
+fun BookCard(book: BookEntity,
+             onBookClick: (String) -> Unit) {
 
     val subjectsList = remember(book.subjects) {
         book.subjects?.split(",")?.map { it.trim() } ?: emptyList()
@@ -67,6 +74,10 @@ fun BookCard(book: BookEntity) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clickable {
+                val workId = book.id.split("/").last()
+                onBookClick(workId)
+            }
             .shadow(
                 elevation = 8.dp,
                 shape = MaterialTheme.shapes.medium,
@@ -249,3 +260,4 @@ fun BookCard(book: BookEntity) {
         }
     }
 }
+

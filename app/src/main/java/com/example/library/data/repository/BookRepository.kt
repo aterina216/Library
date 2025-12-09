@@ -11,9 +11,10 @@ import kotlinx.coroutines.flow.firstOrNull
 
 class BookRepository(
     private val api: ApiBookService,
-private val db: BookDataBase) {
+    private val db: BookDataBase
+) {
 
-    suspend fun loadBooks():List<BookEntity>? {
+    suspend fun loadBooks(): List<BookEntity>? {
 
         val cashedBooks = db.getDao().getAllBooks().firstOrNull()
         if (cashedBooks != null && cashedBooks.isNotEmpty()) {
@@ -23,17 +24,14 @@ private val db: BookDataBase) {
         try {
             val books = api.getFictionBooks()
             if (books != null) {
-             val booksEntity = books.works.map {
-                 book ->
-                 book.toEntity()
-             }
+                val booksEntity = books.works.map { book ->
+                    book.toEntity()
+                }
 
                 db.getDao().insertBooks(booksEntity)
                 return booksEntity
-            }
-            else null
-        }
-        catch (e: Exception) {
+            } else null
+        } catch (e: Exception) {
             Log.e("Repository", "${e.message}")
             null
         }
