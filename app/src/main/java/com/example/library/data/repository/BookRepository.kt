@@ -37,4 +37,33 @@ class BookRepository(
         }
         return null
     }
+
+    suspend fun searchBooks(query: String): List<BookEntity> {
+        Log.d("Repository", "🔍 Ищем книги по запросу: '$query'")
+
+        try {
+            if(query.isBlank() || query.length < 3){
+                Log.d("Repository", "📭 Пустой запрос, возвращаем пустой список")
+                return emptyList()
+            }
+            val searchResponse = api.getSearchResult(query)
+            Log.d("Repository", "📊 API вернул ${searchResponse.numFound} результатов")
+            val bookList = searchResponse.docs.mapNotNull {book ->
+                try {
+                    Log.d("Repository", "🔄 Маппим книгу: ${book.title ?: "без названия"}")
+                    book.toEntity()
+                }
+                catch (e: Exception) {
+                    Log.w("Repository", "⚠️ Не удалось смаппить книгу: $e")
+                    null
+                }
+            }
+            return bookList
+        }
+        catch (e: Exception) {
+            Log.e("Repository", "❌ Ошибка поиска: ${e.message}")
+            Log.e("Repository", "❌ Stacktrace:", e)  // Полный стектрейс
+            return emptyList()
+        }
+    }
 }

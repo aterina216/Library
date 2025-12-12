@@ -3,6 +3,7 @@
 package com.example.library.ui.screens
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -25,6 +26,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,6 +37,7 @@ import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,12 +52,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.room.util.copy
 import com.example.library.ui.components.BookCard
 import com.example.library.ui.viewmodels.BookViewModel
+import kotlinx.coroutines.delay
 import kotlinx.serialization.serializer
 import java.net.URLDecoder
 
@@ -62,19 +67,35 @@ import java.net.URLDecoder
 @Composable
 fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
     val books by viewModel._books.collectAsState()
+    val searchBooks by viewModel._searchBooks.collectAsState()
+    val isSearching by viewModel.isSearching.collectAsState()
 
     var searchText by remember { mutableStateOf("") }
 
-    var filteredBooks = remember(books, searchText) {
+    LaunchedEffect(searchText) {
+        if(searchText.isNotBlank()) {
+            delay(500)
+            Log.d("HomeScreen", "⏱️ Дебаунс сработал, ищем: '$searchText'")
+            viewModel.searchBooks(searchText)
+        }
+        else {
+            viewModel.searchBooks("")
+        }
+    }
+
+    var filteredBooks = remember(books, searchBooks,searchText, isSearching) {
         if (searchText.isEmpty()) {
             books
         } else {
-            books.filter { book ->
-                book.title.contains(searchText, ignoreCase = true) ||
-                        book.authors.contains(searchText, ignoreCase = true)
+            if (isSearching) {
+                emptyList()
+            } else {
+                searchBooks
             }
         }
     }
+
+    Log.d("HomeScreen", "🔄 Рендер. books: ${books.size}, searchBooks: ${searchBooks.size}, searchText: '$searchText', showing: ${filteredBooks.size}")
 
     // Градиентный фон
     val backgroundGradient = Brush.verticalGradient(
@@ -213,7 +234,20 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
 
         }
     )
-    { PaddingValues ->
+    {
+        PaddingValues ->
+
+        if(searchText.isNotBlank() && isSearching) {
+            Box(
+                modifier = Modifier.
+                fillMaxSize()
+                    .background(Color.LightGray.copy(alpha = 0.7f)),
+                contentAlignment = Alignment.Center
+            ){
+                CircularProgressIndicator(color = Color.White)
+            }
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
