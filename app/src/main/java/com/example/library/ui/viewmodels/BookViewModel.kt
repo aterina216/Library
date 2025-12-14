@@ -39,6 +39,7 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
     val _isLoading: StateFlow<Boolean> = isLoading
     private var hasMore = MutableStateFlow(true)
     val _hasMore: StateFlow<Boolean> = hasMore
+    private val scrollPositions = mutableStateMapOf<BookCategory, Pair<Int, Int>>()
 
 
 
@@ -49,22 +50,21 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
 
     fun loadCategory(category: BookCategory) {
         Log.d("ViewModel", "📂 Загружаем категорию: ${category.displayName}")
-
         _currentCategory.value = category
 
         val isNewCategory = pageCounters[category] == null
         if (isNewCategory) {
-            pageCounters[category] = 0      // сброс страницы
+            pageCounters[category] = 0
             hasMore.value = true
-            _currentBooks.value = emptyList()      // очистка только при смене категории
+            _currentBooks.value = emptyList()
         }
 
+        // 🛑 защита от одновременных загрузок
+        if (isLoading.value) return
         isLoading.value = true
-
 
         viewModelScope.launch {
             try {
-
                 val currentPage = (pageCounters[category] ?: 0) + 1
 
                 val books = repository.loadBooksByCategory(
@@ -80,20 +80,19 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
                 loadedBooks[category] = allBooks
 
                 _booksByCategory[category] = allBooks
-                _currentCategory.value = category
-                _currentBooks.value = books
+                _currentBooks.value = allBooks // ✅ вот тут исправлено!
 
                 hasMore.value = books.size == pageSize
+
                 Log.d("ViewModel", "✅ Загружено ${books.size} книг для ${category.displayName}")
-            }
-            catch (e: Exception) {
+            } catch (e: Exception) {
                 Log.e("ViewModel", "❌ Ошибка загрузки ${category.displayName}: ${e.message}")
-                _currentBooks.value = emptyList()
             } finally {
                 isLoading.value = false
             }
         }
     }
+
 
 
     fun searchBooks(query: String) {
@@ -121,5 +120,13 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
                 _isSearching.value = false
             }
         }
+    }
+
+    fun saveScrollPosition(category: BookCategory, index: Int, offset: Int) {
+        scrollPositions[category] = index to offset
+    }
+
+    fun getScrollPosition(category: BookCategory): Pair<Int, Int>? {
+        return scrollPositions[category]
     }
 }

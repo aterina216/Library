@@ -43,6 +43,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -65,6 +66,7 @@ import com.example.library.ui.components.BookCard
 import com.example.library.ui.components.CategoryTabs
 import com.example.library.ui.viewmodels.BookViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.serialization.serializer
 import java.net.URLDecoder
 
@@ -81,6 +83,8 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
     val listState = rememberLazyListState()
     val isLoading by viewModel._isLoading.collectAsState()
     val hasMore by viewModel._hasMore.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
+
 
 
     LaunchedEffect(searchText) {
@@ -92,21 +96,27 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
             viewModel.searchBooks("")
         }
     }
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
-            .collect { lastVisible ->
-                val total = listState.layoutInfo.totalItemsCount
-                if (lastVisible != null && total > 0 && lastVisible >= total - 3) {
-                    // почти дошли до конца
-                    val currentCategory = viewModel.currentCategory.value
-                    if (viewModel.isSearching.value.not() && viewModel._isLoading.value.not()) {
-                        if (viewModel._hasMore.value) {
-                            Log.d("HomeScreen", "📖 Догружаем следующую страницу...")
-                            viewModel.loadCategory(currentCategory)
-                        }
-                    }
-                }
+
+    LaunchedEffect(Unit) {
+        snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
+            .collect { (index, offset) ->
+                viewModel.saveScrollPosition(currentCategory, index, offset)
             }
+    }
+
+// ♻️ Восстанавливаем позицию ТОЛЬКО когда данные обновились
+    LaunchedEffect(currentCategory, currentBooks) {
+        // маленькая задержка, чтобы LazyColumn успела отрисоваться
+        delay(100)
+        val (index, offset) = viewModel.getScrollPosition(currentCategory) ?: (0 to 0)
+        if (index != 0 || offset != 0) {
+            coroutineScope.launch {
+                listState.scrollToItem(index, offset)
+                Log.d("HomeScreen", "✅ Восстановлена позиция: $index / $offset для ${currentCategory.displayName}")
+            }
+        } else {
+            Log.d("HomeScreen", "↩️ Новая категория — позиция с нуля")
+        }
     }
 
 
@@ -129,9 +139,7 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
             MaterialTheme.colorScheme.background.copy(alpha = 0.95f),
             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
             MaterialTheme.colorScheme.background
-        ),
-        startY = 0f,
-        endY = 1000f
+        ), startY = 0f, endY = 1000f
     )
 
     Scaffold(
@@ -144,8 +152,7 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
                 Text(
                     text = "📚 Моя библиотека",
                     style = MaterialTheme.typography.headlineLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = (-0.5).sp
+                        fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp
                     ),
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = 4.dp)
@@ -168,8 +175,7 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
                                     MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
                                     MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                                 )
-                            ),
-                            shape = RoundedCornerShape(50)
+                            ), shape = RoundedCornerShape(50)
                         )
                 )
 
@@ -185,8 +191,7 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
                                     MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
                                     MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
                                 )
-                            ),
-                            shape = RoundedCornerShape(16.dp)
+                            ), shape = RoundedCornerShape(16.dp)
                         )
                         .border(
                             width = 2.dp,
@@ -199,8 +204,7 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
                             shape = RoundedCornerShape(16.dp),
                             ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
                             spotColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
-                        ),
-                    contentAlignment = Alignment.CenterStart
+                        ), contentAlignment = Alignment.CenterStart
                 ) {
                     Row(
                         modifier = Modifier
@@ -238,12 +242,10 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
                                     }
                                     innerTextField()
                                 }
-                            }
-                        )
+                            })
                         if (searchText.isNotEmpty()) {
                             IconButton(
-                                onClick = { searchText = "" },
-                                modifier = Modifier.size(20.dp)
+                                onClick = { searchText = "" }, modifier = Modifier.size(20.dp)
                             ) {
                                 Icon(
                                     Icons.Default.Close,
@@ -258,23 +260,28 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
 
                 if (searchText.isEmpty()) {
                     CategoryTabs(
-                        categories = categories,
+                        categories = BookCategory.entries,
                         currentCategory = currentCategory,
-                        onCategorySelected = { selectedCategory ->
-                            viewModel.loadCategory(selectedCategory)
+                        onCategorySelected = { selected ->
+                            if (selected != currentCategory) {
+                                coroutineScope.launch {
+                                    listState.scrollToItem(0)
+                                }
+                                viewModel.loadCategory(selected)
+                            }
                         }
                     )
                 }
             }
-        }
-    )
+        })
 
 
     { PaddingValues ->
 
         if (searchText.isNotBlank() && isSearching) {
             Box(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
                     .background(Color.LightGray.copy(alpha = 0.7f)),
                 contentAlignment = Alignment.Center
             ) {
@@ -290,11 +297,9 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
         ) {
             LazyColumn(
                 state = listState,
-                modifier = Modifier
-                    .fillMaxSize(),
+                modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
-                    top = 16.dp,
-                    bottom = 16.dp
+                    top = 16.dp, bottom = 16.dp
                 ),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
@@ -302,11 +307,9 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
                 // Карточки книг
                 items(filteredBooks) { book ->
                     BookCard(
-                        book,
-                        onBookClick = { workId ->
+                        book, onBookClick = { workId ->
                             navController.navigate("book_detail/$workId")
-                        }
-                    )
+                        })
                 }
 
 
