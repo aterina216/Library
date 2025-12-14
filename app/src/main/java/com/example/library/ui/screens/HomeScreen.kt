@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -43,6 +44,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,6 +55,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -68,7 +71,6 @@ import java.net.URLDecoder
 @SuppressLint("SuspiciousIndentation", "RememberReturnType")
 @Composable
 fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
-    //val books by viewModel._books.collectAsState()
     val searchBooks by viewModel._searchBooks.collectAsState()
     val isSearching by viewModel.isSearching.collectAsState()
     var searchText by remember { mutableStateOf("") }
@@ -76,22 +78,41 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
     val categories = BookCategory.entries
     val currentCategory by viewModel.currentCategory.collectAsState()
     val currentBooks by viewModel.currentBooks.collectAsState()
+    val listState = rememberLazyListState()
+    val isLoading by viewModel._isLoading.collectAsState()
+    val hasMore by viewModel._hasMore.collectAsState()
 
 
     LaunchedEffect(searchText) {
-        if(searchText.isNotBlank()) {
+        if (searchText.isNotBlank()) {
             delay(500)
             Log.d("HomeScreen", "⏱️ Дебаунс сработал, ищем: '$searchText'")
             viewModel.searchBooks(searchText)
-        }
-        else {
+        } else {
             viewModel.searchBooks("")
         }
     }
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
+            .collect { lastVisible ->
+                val total = listState.layoutInfo.totalItemsCount
+                if (lastVisible != null && total > 0 && lastVisible >= total - 3) {
+                    // почти дошли до конца
+                    val currentCategory = viewModel.currentCategory.value
+                    if (viewModel.isSearching.value.not() && viewModel._isLoading.value.not()) {
+                        if (viewModel._hasMore.value) {
+                            Log.d("HomeScreen", "📖 Догружаем следующую страницу...")
+                            viewModel.loadCategory(currentCategory)
+                        }
+                    }
+                }
+            }
+    }
 
-    var filteredBooks = remember(currentBooks, searchBooks,searchText, isSearching) {
+
+    var filteredBooks = remember(currentBooks, searchBooks, searchText, isSearching) {
         if (searchText.isEmpty()) {
-           currentBooks
+            currentBooks
         } else {
             if (isSearching) {
                 emptyList()
@@ -239,7 +260,7 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
                     CategoryTabs(
                         categories = categories,
                         currentCategory = currentCategory,
-                        onCategorySelected = {selectedCategory ->
+                        onCategorySelected = { selectedCategory ->
                             viewModel.loadCategory(selectedCategory)
                         }
                     )
@@ -249,17 +270,14 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
     )
 
 
+    { PaddingValues ->
 
-    {
-        PaddingValues ->
-
-        if(searchText.isNotBlank() && isSearching) {
+        if (searchText.isNotBlank() && isSearching) {
             Box(
-                modifier = Modifier.
-                fillMaxSize()
+                modifier = Modifier.fillMaxSize()
                     .background(Color.LightGray.copy(alpha = 0.7f)),
                 contentAlignment = Alignment.Center
-            ){
+            ) {
                 CircularProgressIndicator(color = Color.White)
             }
         }
@@ -271,6 +289,7 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
                 .background(backgroundGradient)
         ) {
             LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .fillMaxSize(),
                 contentPadding = PaddingValues(
@@ -293,38 +312,42 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
 
                 // Декоративный элемент в конце
                 item {
+                    if (isLoading) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    } else {
+                        Text(
+                            text = if (hasMore) "" else "✨ Конец списка",
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                        )
+                    }
+
+
+                    // Легкое наложение градиента сверху для глубины
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(60.dp)
-                            .padding(top = 16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "✨ Конец списка",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
-                            fontStyle = FontStyle.Italic
-                        )
-                    }
+                            .height(100.dp)
+                            .align(Alignment.TopCenter)
+                            .background(
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                                        Color.Transparent
+                                    )
+                                )
+                            )
+                    )
                 }
             }
-
-            // Легкое наложение градиента сверху для глубины
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp)
-                    .align(Alignment.TopCenter)
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
-                                Color.Transparent
-                            )
-                        )
-                    )
-            )
         }
     }
 }

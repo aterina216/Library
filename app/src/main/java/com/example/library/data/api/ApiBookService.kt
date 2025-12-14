@@ -20,6 +20,8 @@ interface ApiBookService {
 
     @GET("subjects/{subject}.json")
     suspend fun getBooksBySubject(
-        @Path("subject")subject: String
+        @Path("subject")subject: String,
+        @Query("limit") limit: Int = 20,
+        @Query("offset") offset: Int = 0
     ): OpenLibraryResponse
 }

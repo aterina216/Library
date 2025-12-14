@@ -19,8 +19,6 @@ import kotlinx.coroutines.sync.Mutex
 class BookViewModel(private val repository: BookRepository) : ViewModel() {
 
     private var _booksByCategory = mutableStateMapOf<BookCategory, List<BookEntity>>()
-    val booksByCategory: Map<BookCategory, List<BookEntity>> get() = _booksByCategory
-
     private var _currentCategory = MutableStateFlow(BookCategory.FICTION)
     val currentCategory: StateFlow<BookCategory> = _currentCategory
 
@@ -33,6 +31,16 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
     private var _isSearching = MutableStateFlow(false)
     val isSearching: StateFlow<Boolean> = _isSearching
 
+    private val loadedBooks = mutableStateMapOf<BookCategory, List<BookEntity>>()
+    private val pageCounters = mutableStateMapOf<BookCategory, Int>()
+
+    private var pageSize = 20
+    private var isLoading = MutableStateFlow(false)
+    val _isLoading: StateFlow<Boolean> = isLoading
+    private var hasMore = MutableStateFlow(true)
+    val _hasMore: StateFlow<Boolean> = hasMore
+
+
 
     init {
         Log.d("viewmodel", "start")
@@ -44,19 +52,45 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
 
         _currentCategory.value = category
 
+        val isNewCategory = pageCounters[category] == null
+        if (isNewCategory) {
+            pageCounters[category] = 0      // сброс страницы
+            hasMore.value = true
+            _currentBooks.value = emptyList()      // очистка только при смене категории
+        }
+
+        isLoading.value = true
+
+
         viewModelScope.launch {
             try {
-                val books = repository.loadBooksByCategory(category) ?: emptyList()
-                _booksByCategory[category] = books
+
+                val currentPage = (pageCounters[category] ?: 0) + 1
+
+                val books = repository.loadBooksByCategory(
+                    category = category,
+                    pageSize = pageSize,
+                    page = currentPage
+                ) ?: emptyList()
+
+                pageCounters[category] = currentPage
+
+                val existingBooks = loadedBooks[category] ?: emptyList()
+                val allBooks = existingBooks + books
+                loadedBooks[category] = allBooks
+
+                _booksByCategory[category] = allBooks
                 _currentCategory.value = category
                 _currentBooks.value = books
+
+                hasMore.value = books.size == pageSize
                 Log.d("ViewModel", "✅ Загружено ${books.size} книг для ${category.displayName}")
             }
             catch (e: Exception) {
                 Log.e("ViewModel", "❌ Ошибка загрузки ${category.displayName}: ${e.message}")
                 _currentBooks.value = emptyList()
             } finally {
-                _isSearching.value = false
+                isLoading.value = false
             }
         }
     }
