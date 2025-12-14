@@ -1,6 +1,8 @@
 package com.example.library.data.repository
 
+import android.os.Message
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import com.example.library.data.api.ApiBookService
 import com.example.library.data.database.BookDataBase
 import com.example.library.data.database.dao.BookDao
@@ -14,28 +16,31 @@ class BookRepository(
     private val db: BookDataBase
 ) {
 
-    suspend fun loadBooks(): List<BookEntity>? {
+    private val categoryCache = mutableMapOf<String, List<BookEntity>>()
 
-        val cashedBooks = db.getDao().getAllBooks().firstOrNull()
-        if (cashedBooks != null && cashedBooks.isNotEmpty()) {
-            return cashedBooks
+    suspend fun loadBooksByCategory(category: BookCategory): List<BookEntity>? {
+
+        if (categoryCache.containsKey(category.subject)) {
+            Log.d("Repository", "📦 Загружаем из кэша памяти: ${category.displayName}")
+            return categoryCache[category.subject]
         }
 
-        try {
-            val books = api.getFictionBooks()
-            if (books != null) {
-                val booksEntity = books.works.map { book ->
-                    book.toEntity()
-                }
+       return try {
+            val response = api.getBooksBySubject(category.subject)
+           val books = response.works.map { it.toEntity() }
 
-                db.getDao().insertBooks(booksEntity)
-                return booksEntity
-            } else null
-        } catch (e: Exception) {
-            Log.e("Repository", "${e.message}")
-            null
+           // Сохраняем в кэш
+           categoryCache[category.subject] = books
+
+           // Сохраняем в БД (опционально)
+           db.getDao().insertBooks(books)
+
+           books
         }
-        return null
+       catch (e: Exception) {
+           Log.d("repo", "${e.message}")
+           null
+       }
     }
 
     suspend fun searchBooks(query: String): List<BookEntity> {

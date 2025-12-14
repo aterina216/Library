@@ -3,6 +3,7 @@ package com.example.library.data.api
 import com.example.library.data.models.response.OpenLibraryResponse
 import com.example.library.data.models.response.OpenLibrarySearchResponse
 import retrofit2.http.GET
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface ApiBookService {
@@ -16,4 +17,9 @@ interface ApiBookService {
         @Query("q") q: String,
         @Query("limit") limit: Int = 20
     ): OpenLibrarySearchResponse
+
+    @GET("subjects/{subject}.json")
+    suspend fun getBooksBySubject(
+        @Path("subject")subject: String
+    ): OpenLibraryResponse
 }

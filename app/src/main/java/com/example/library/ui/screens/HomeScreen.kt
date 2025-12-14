@@ -57,7 +57,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.room.util.copy
+import com.example.library.data.repository.BookCategory
 import com.example.library.ui.components.BookCard
+import com.example.library.ui.components.CategoryTabs
 import com.example.library.ui.viewmodels.BookViewModel
 import kotlinx.coroutines.delay
 import kotlinx.serialization.serializer
@@ -66,11 +68,15 @@ import java.net.URLDecoder
 @SuppressLint("SuspiciousIndentation", "RememberReturnType")
 @Composable
 fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
-    val books by viewModel._books.collectAsState()
+    //val books by viewModel._books.collectAsState()
     val searchBooks by viewModel._searchBooks.collectAsState()
     val isSearching by viewModel.isSearching.collectAsState()
-
     var searchText by remember { mutableStateOf("") }
+
+    val categories = BookCategory.entries
+    val currentCategory by viewModel.currentCategory.collectAsState()
+    val currentBooks by viewModel.currentBooks.collectAsState()
+
 
     LaunchedEffect(searchText) {
         if(searchText.isNotBlank()) {
@@ -83,9 +89,9 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
         }
     }
 
-    var filteredBooks = remember(books, searchBooks,searchText, isSearching) {
+    var filteredBooks = remember(currentBooks, searchBooks,searchText, isSearching) {
         if (searchText.isEmpty()) {
-            books
+           currentBooks
         } else {
             if (isSearching) {
                 emptyList()
@@ -94,8 +100,6 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
             }
         }
     }
-
-    Log.d("HomeScreen", "🔄 Рендер. books: ${books.size}, searchBooks: ${searchBooks.size}, searchText: '$searchText', showing: ${filteredBooks.size}")
 
     // Градиентный фон
     val backgroundGradient = Brush.verticalGradient(
@@ -230,10 +234,22 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
                         }
                     }
                 }
-            }
 
+                if (searchText.isEmpty()) {
+                    CategoryTabs(
+                        categories = categories,
+                        currentCategory = currentCategory,
+                        onCategorySelected = {selectedCategory ->
+                            viewModel.loadCategory(selectedCategory)
+                        }
+                    )
+                }
+            }
         }
     )
+
+
+
     {
         PaddingValues ->
 
