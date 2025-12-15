@@ -29,7 +29,7 @@ class BookRepository(
             books
         } catch (e: Exception) {
             Log.d("repo", "${e.message}")
-            null
+            db.getDao().getBooksByCategory(category.subject)
         }
     }
 

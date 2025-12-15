@@ -42,7 +42,6 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
     private val scrollPositions = mutableStateMapOf<BookCategory, Pair<Int, Int>>()
 
 
-
     init {
         Log.d("viewmodel", "start")
         loadCategory(BookCategory.FICTION)
@@ -80,7 +79,7 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
                 loadedBooks[category] = allBooks
 
                 _booksByCategory[category] = allBooks
-                _currentBooks.value = allBooks // ✅ вот тут исправлено!
+                _currentBooks.value = allBooks
 
                 hasMore.value = books.size == pageSize
 
@@ -92,7 +91,6 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
             }
         }
     }
-
 
 
     fun searchBooks(query: String) {

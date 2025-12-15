@@ -112,7 +112,10 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
         if (index != 0 || offset != 0) {
             coroutineScope.launch {
                 listState.scrollToItem(index, offset)
-                Log.d("HomeScreen", "✅ Восстановлена позиция: $index / $offset для ${currentCategory.displayName}")
+                Log.d(
+                    "HomeScreen",
+                    "✅ Восстановлена позиция: $index / $offset для ${currentCategory.displayName}"
+                )
             }
         } else {
             Log.d("HomeScreen", "↩️ Новая категория — позиция с нуля")

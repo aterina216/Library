@@ -29,4 +29,7 @@ interface BookDao {
 
     @Query("SELECT * FROM books WHERE id = :id")
     suspend fun getById(id: String): BookEntity?
+
+    @Query("SELECT * FROM books WHERE subjects LIKE '%' || :subject || '%'")
+    suspend fun getBooksByCategory(subject: String): List<BookEntity>
 }
