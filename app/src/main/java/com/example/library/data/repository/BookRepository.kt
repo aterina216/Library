@@ -21,7 +21,10 @@ class BookRepository(
         return try {
             val offset = (page - 1) * pageSize
             val response = api.getBooksBySubject(category.subject, limit = pageSize, offset = offset)
-            val books = response.works.map { it.toEntity() }
+
+            val books = response.works.map {
+                it.toEntity().copy(category = category.subject)
+            }
 
             // Сохраняем в БД (опционально)
             db.getDao().insertBooks(books)

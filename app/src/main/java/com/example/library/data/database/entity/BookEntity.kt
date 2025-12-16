@@ -18,4 +18,6 @@ data class BookEntity (
     val subjects: String?,
     val description: String?,
 
+    @ColumnInfo(defaultValue = "")
+    val category: String = ""
 )

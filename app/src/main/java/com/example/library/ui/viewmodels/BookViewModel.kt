@@ -55,10 +55,9 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
         if (isNewCategory) {
             pageCounters[category] = 0
             hasMore.value = true
-            _currentBooks.value = emptyList()
+            _currentBooks.value = loadedBooks[category] ?: emptyList()
         }
 
-        // 🛑 защита от одновременных загрузок
         if (isLoading.value) return
         isLoading.value = true
 

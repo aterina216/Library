@@ -104,7 +104,25 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
             }
     }
 
-// ♻️ Восстанавливаем позицию ТОЛЬКО когда данные обновились
+    LaunchedEffect(listState, isLoading, hasMore, searchText) {
+        snapshotFlow {
+            val layoutInfo = listState.layoutInfo
+            val totalItems = layoutInfo.totalItemsCount
+            val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+
+            lastVisibleIndex >= totalItems - 3 && totalItems > 0
+        }.collect {
+            shouldLoadMore ->
+            if(shouldLoadMore && !isLoading && hasMore && searchText.isEmpty() && !isSearching) {
+                Log.d("Пагинация", "📖 Догружаем следующую страницу...")
+                coroutineScope.launch {
+                    viewModel.loadCategory(currentCategory)
+                }
+            }
+        }
+    }
+
+
     LaunchedEffect(currentCategory, currentBooks) {
         // маленькая задержка, чтобы LazyColumn успела отрисоваться
         delay(100)
