@@ -1,4 +1,4 @@
-package com.example.library.data.repository
+package com.example.library.ui
 
 enum class BookCategory(val displayName: String,
     val subject: String) {

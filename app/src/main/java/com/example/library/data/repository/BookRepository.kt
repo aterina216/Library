@@ -9,6 +9,7 @@ import com.example.library.data.database.dao.BookDao
 import com.example.library.data.database.entity.BookEntity
 import com.example.library.data.mapper.BookMapper.toEntity
 import com.example.library.data.models.response.OpenLibraryResponse
+import com.example.library.ui.BookCategory
 import kotlinx.coroutines.flow.firstOrNull
 
 class BookRepository(

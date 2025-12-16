@@ -61,7 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.room.util.copy
-import com.example.library.data.repository.BookCategory
+import com.example.library.ui.BookCategory
 import com.example.library.ui.components.BookCard
 import com.example.library.ui.components.CategoryTabs
 import com.example.library.ui.viewmodels.BookViewModel
@@ -110,7 +110,7 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
             shouldLoadMore ->
             if(shouldLoadMore) {
                 if (searchText.isNotEmpty() && !isSearching && hasMoreSearch){
-                    Log.d("SearchPagination", "📖 Догружаем следующую страницу поиска...")
+                    Log.d("SearchPagination", "Догружаем следующую страницу поиска...")
                     viewModel.loadMoreSearch()
                 }
             }

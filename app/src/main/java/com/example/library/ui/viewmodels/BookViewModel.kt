@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.library.data.database.entity.BookEntity
 import com.example.library.data.models.Book
-import com.example.library.data.repository.BookCategory
+import com.example.library.ui.BookCategory
 import com.example.library.data.repository.BookRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
