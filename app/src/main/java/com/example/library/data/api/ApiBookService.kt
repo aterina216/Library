@@ -15,7 +15,8 @@ interface ApiBookService {
     @GET("search.json")
     suspend fun getSearchResult(
         @Query("q") q: String,
-        @Query("limit") limit: Int = 20
+        @Query("limit") limit: Int = 20,
+        @Query("offset") offset: Int = 0
     ): OpenLibrarySearchResponse
 
     @GET("subjects/{subject}.json")

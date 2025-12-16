@@ -31,6 +31,21 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
     private var _isSearching = MutableStateFlow(false)
     val isSearching: StateFlow<Boolean> = _isSearching
 
+    // Текущая страница поиска
+    private var searchPage = 1
+
+    // Есть ли еще результаты для поиска
+    private val _hasMoreSearch = MutableStateFlow(true)
+    val hasMoreSearch: StateFlow<Boolean> = _hasMoreSearch
+
+    private val searchCache = mutableMapOf<String, List<BookEntity>>()
+
+    // Для отслеживания, загружаем ли мы следующую страницу поиска
+    private val _isLoadingMoreSearch = MutableStateFlow(false)
+    val isLoadingMoreSearch: StateFlow<Boolean> = _isLoadingMoreSearch
+
+    private var currentSearchQuery = ""
+
     private val loadedBooks = mutableStateMapOf<BookCategory, List<BookEntity>>()
     private val pageCounters = mutableStateMapOf<BookCategory, Int>()
 
@@ -99,22 +114,76 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
             Log.d("ViewModel", "📭 Пустой запрос, очищаем результаты")
             searchBooks.value = emptyList()
             _isSearching.value = false
+            _hasMoreSearch.value = true
             return
         }
+
+        if(query!= currentSearchQuery) {
+            currentSearchQuery = query
+            searchPage = 1
+            _hasMoreSearch.value = true
+            searchBooks.value = emptyList()
+        }
+
+        _isSearching.value = true
 
         viewModelScope.launch {
             try {
                 Log.d("ViewModel", "🔄 Запускаем поиск в репозитории")
-                val searchResponse = repository.searchBooks(query)
-                Log.d("ViewModel", "📊 Репозиторий вернул: ${searchResponse.size} книг")
-                searchBooks.value = searchResponse
-                _isSearching.value = false
+                val books = repository.searchBooks(query, 20, searchPage)
+                if (searchPage == 1) {
+                    searchBooks.value = books
+                }
+                else {
+                    val currentResults = searchBooks.value
+                    searchBooks.value = currentResults + books
+                }
 
-                Log.d("ViewModel", "✅ Обновили searchBooks: ${_searchBooks.value.size} книг")
+                _hasMoreSearch.value = books.size == 20
+                searchPage++
+                Log.d("ViewModel", "✅ Поиск: загружено ${books.size} книг, всего ${searchBooks.value.size}")
+
             } catch (e: Exception) {
-                Log.e("ViewModel", "❌ Ошибка поиска в VM: ${e.message}", e)
-                searchBooks.value = emptyList()
+                Log.e("ViewModel", "❌ Ошибка поиска: ${e.message}")
+                _hasMoreSearch.value = false
+            }
+            finally {
                 _isSearching.value = false
+                _isLoadingMoreSearch.value = false
+            }
+        }
+    }
+
+    fun loadMoreSearch() {
+        if(!_hasMoreSearch.value || _isSearching.value || currentSearchQuery.isEmpty()) {
+            return
+        }
+        _isLoadingMoreSearch.value = true
+
+        viewModelScope.launch {
+            try {
+                Log.d("ViewModel", "🔄 Догружаем еще для '$currentSearchQuery', страница $searchPage")
+                val books = repository.searchBooks(
+                    query = currentSearchQuery,
+                    pageSize = 20,
+                    page = searchPage
+                )
+
+                val currentResults = searchBooks.value
+                searchBooks.value = currentResults + books
+
+                _hasMoreSearch.value = books.size == 20
+
+                // Увеличиваем счетчик
+                searchPage++
+
+                Log.d("ViewModel", "✅ Догружено ${books.size} книг, всего ${searchBooks.value.size}")
+            }
+            catch (e: Exception) {
+                Log.e("ViewModel", "❌ Ошибка догрузки: ${e.message}")
+                _hasMoreSearch.value = false
+            } finally {
+                _isLoadingMoreSearch.value = false
             }
         }
     }

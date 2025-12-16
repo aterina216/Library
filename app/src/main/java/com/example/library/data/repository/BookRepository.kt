@@ -16,11 +16,14 @@ class BookRepository(
     private val db: BookDataBase
 ) {
 
-    suspend fun loadBooksByCategory(category: BookCategory,
-                                    pageSize: Int = 20, page: Int = 1): List<BookEntity>? {
+    suspend fun loadBooksByCategory(
+        category: BookCategory,
+        pageSize: Int = 20, page: Int = 1
+    ): List<BookEntity>? {
         return try {
             val offset = (page - 1) * pageSize
-            val response = api.getBooksBySubject(category.subject, limit = pageSize, offset = offset)
+            val response =
+                api.getBooksBySubject(category.subject, limit = pageSize, offset = offset)
 
             val books = response.works.map {
                 it.toEntity().copy(category = category.subject)
@@ -36,7 +39,11 @@ class BookRepository(
         }
     }
 
-    suspend fun searchBooks(query: String): List<BookEntity> {
+    suspend fun searchBooks(
+        query: String,
+        pageSize: Int = 20,
+        page: Int = 1
+    ): List<BookEntity> {
         Log.d("Repository", "🔍 Ищем книги по запросу: '$query'")
 
         try {
@@ -44,7 +51,10 @@ class BookRepository(
                 Log.d("Repository", "📭 Пустой запрос, возвращаем пустой список")
                 return emptyList()
             }
-            val searchResponse = api.getSearchResult(query)
+
+            val offset = (page - 1) * pageSize
+
+            val searchResponse = api.getSearchResult(query, pageSize, offset)
             Log.d("Repository", "📊 API вернул ${searchResponse.numFound} результатов")
             val bookList = searchResponse.docs.mapNotNull { book ->
                 try {

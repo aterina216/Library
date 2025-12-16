@@ -76,6 +76,8 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
     val searchBooks by viewModel._searchBooks.collectAsState()
     val isSearching by viewModel.isSearching.collectAsState()
     var searchText by remember { mutableStateOf("") }
+    val hasMoreSearch by viewModel.hasMoreSearch.collectAsState()
+    val isLoadingMoreSearch by viewModel.isLoadingMoreSearch.collectAsState()
 
     val categories = BookCategory.entries
     val currentCategory by viewModel.currentCategory.collectAsState()
@@ -94,6 +96,24 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
             viewModel.searchBooks(searchText)
         } else {
             viewModel.searchBooks("")
+        }
+    }
+
+    LaunchedEffect(listState, searchText, isSearching, hasMoreSearch) {
+        snapshotFlow {
+            val layoutInfo = listState.layoutInfo
+            val totalItems = layoutInfo.totalItemsCount
+            val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+
+            lastVisibleIndex >= totalItems - 3 && totalItems > 0
+        }.collect {
+            shouldLoadMore ->
+            if(shouldLoadMore) {
+                if (searchText.isNotEmpty() && !isSearching && hasMoreSearch){
+                    Log.d("SearchPagination", "📖 Догружаем следующую страницу поиска...")
+                    viewModel.loadMoreSearch()
+                }
+            }
         }
     }
 
