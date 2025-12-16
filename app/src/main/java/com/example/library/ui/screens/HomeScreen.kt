@@ -326,7 +326,7 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
                     .background(Color.LightGray.copy(alpha = 0.7f)),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = Color.White)
+                CircularProgressIndicator()
             }
         }
 
@@ -356,7 +356,7 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
 
                 // Декоративный элемент в конце
                 item {
-                    if (isLoading) {
+                    if (isLoading||isLoadingMoreSearch ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -365,9 +365,14 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
                         ) {
                             CircularProgressIndicator()
                         }
-                    } else {
+                    }
+                    else {
                         Text(
-                            text = if (hasMore) "" else "✨ Конец списка",
+                            text = if (searchText.isNotEmpty()) {
+                                if (hasMoreSearch) "" else "✨ Найдено ${searchBooks.size} книг"
+                            } else {
+                                if (hasMore) "" else "✨ Конец списка"
+                            },
                             modifier = Modifier.fillMaxWidth(),
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
