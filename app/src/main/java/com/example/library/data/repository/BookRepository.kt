@@ -8,6 +8,7 @@ import com.example.library.data.database.BookDataBase
 import com.example.library.data.database.dao.BookDao
 import com.example.library.data.database.entity.BookEntity
 import com.example.library.data.mapper.BookMapper.toEntity
+import com.example.library.data.models.response.BookDetailResponse
 import com.example.library.data.models.response.OpenLibraryResponse
 import com.example.library.ui.BookCategory
 import kotlinx.coroutines.flow.firstOrNull
@@ -71,6 +72,18 @@ class BookRepository(
             Log.e("Repository", "❌ Ошибка поиска: ${e.message}")
             Log.e("Repository", "❌ Stacktrace:", e)  // Полный стектрейс
             return emptyList()
+        }
+    }
+
+    suspend fun getBookById(bookId: String): BookDetailResponse? {
+
+        try {
+            val book = api.getBookById(bookId)
+            return book
+        }
+        catch (e: Exception) {
+            Log.e("repo", "${e.message}")
+            return null
         }
     }
 }

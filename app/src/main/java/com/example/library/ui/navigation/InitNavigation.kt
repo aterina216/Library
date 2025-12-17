@@ -59,7 +59,8 @@ fun InitNavigation(viewModel: BookViewModel) {
                 )) { backStackEntry ->
                 BookDetailScreen(
                     bookId = backStackEntry.arguments?.getString("bookId") ?: "",
-                    navigationController
+                    navigationController,
+                    viewModel
                 )
             }
         }

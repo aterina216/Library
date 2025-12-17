@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Chip
 import androidx.compose.material.ChipDefaults
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
@@ -56,6 +57,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -74,39 +77,70 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.room.util.TableInfo
 import coil.compose.AsyncImage
 import com.example.library.ui.components.BadgeItem
 import com.example.library.ui.components.ShelfCategoryItem
 import com.example.library.ui.components.SimpleDetailRow
+import com.example.library.ui.viewmodels.BookViewModel
 import kotlin.collections.mapOf
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookDetailScreen(
     bookId: String,
-    navController: NavController
+    navController: NavController,
+    viewModel: BookViewModel
 ) {
     // Состояния для выбранной полки
     var selectedShelfStatus by remember { mutableStateOf<String?>(null) }
     var showShelfMenu by remember { mutableStateOf(false) }
 
-    val mockBook = remember(bookId) {
-        mapOf(
-            "title" to "Великий Гэтсби",
-            "author" to "Фрэнсис Скотт Фицджеральд",
-            "year" to "1925",
-            "description" to "«Великий Гэтсби» — самый известный роман Фицджеральда, ставший символом «эпохи джаза». История рассказывает о молодом и загадочном миллионере Джее Гэтсби, который устраивает пышные вечеринки в надежде вернуть любовь своей жизни — Дэйзи Бьюкенен. Роман исследует темы американской мечты, иллюзий, морального упадка и трагической ценности прошлого.",
-            "coverUrl" to "https://covers.openlibrary.org/b/id/10614930-L.jpg",
-            "pages" to "218",
-            "rating" to "4.2",
-            "genre" to "Классическая литература, Роман",
-            "language" to "Английский"
-        )
-    }
+    val currentBook by viewModel.currentBook.collectAsState()
 
     val scrollState = rememberScrollState()
+
+    LaunchedEffect(bookId) {
+        viewModel.openBookById(bookId) // ✅ Просто загружаем каждый раз
+    }
+
+    if(currentBook == null) {
+        Box(modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                CircularProgressIndicator()
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Загружаем книгу...", color = MaterialTheme.colorScheme.onBackground)
+            }
+        }
+        return
+    }
+
+    val book = currentBook!!
+
+    val coverId = book.covers.firstOrNull()
+    val imageUrl = remember(coverId) {
+        if (coverId != null) "https://covers.openlibrary.org/b/id/${coverId}-L.jpg" else null
+    }
+
+    val descriptionText = remember(book.description) {
+        when (book.description){
+            is String -> book.description
+            is Map<*, *> -> book.description["value"]as? String?
+            else -> ""
+        }
+    }
+
+    val authorsText = remember(book.authors) {
+        book.authors.joinToString(", ") {
+            author -> author.author.key.substringAfterLast("/")
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -216,7 +250,7 @@ fun BookDetailScreen(
                         )
                     ) {
                         AsyncImage(
-                            model = mockBook["coverUrl"],
+                            model = imageUrl,
                             contentDescription = "Обложка книги",
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
@@ -232,7 +266,7 @@ fun BookDetailScreen(
                 ) {
                     // Заголовок (теперь без сердечка)
                     Text(
-                        text = mockBook["title"] ?: "Без названия",
+                        text = book.title ?: "Без названия",
                         style = MaterialTheme.typography.headlineLarge.copy(
                             fontWeight = FontWeight.Bold,
                             letterSpacing = (-0.5).sp,
@@ -247,7 +281,7 @@ fun BookDetailScreen(
 
                     // Автор
                     Text(
-                        text = mockBook["author"] ?: "Неизвестный автор",
+                        text = authorsText ?: "Неизвестный автор",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontStyle = FontStyle.Italic
                         ),
@@ -265,23 +299,31 @@ fun BookDetailScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        BadgeItem(
-                            icon = "📅",
-                            text = "${mockBook["year"]}",
-                            color = MaterialTheme.colorScheme.surfaceVariant
-                        )
+                        if (book.subjects.isNotEmpty()) {
+                            BadgeItem(
+                                icon = "🏷️",
+                                text = "${book.subjects.size} жанров",
+                                color = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        }
 
-                        BadgeItem(
-                            icon = "📖",
-                            text = "${mockBook["pages"]} стр.",
-                            color = MaterialTheme.colorScheme.surfaceVariant
-                        )
+                        // Если есть места
+                        if (book.subject_places.isNotEmpty()) {
+                            BadgeItem(
+                                icon = "📍",
+                                text = "${book.subject_places.size} мест",
+                                color = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        }
 
-                        BadgeItem(
-                            icon = "⭐",
-                            text = mockBook["rating"] ?: "4.0",
-                            color = MaterialTheme.colorScheme.surfaceVariant
-                        )
+                        // Если есть люди
+                        if (book.subject_people.isNotEmpty()) {
+                            BadgeItem(
+                                icon = "👥",
+                                text = "${book.subject_people.size} персонажей",
+                                color = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        }
                     }
 
                     // Кнопка добавления на полку (без иконок, равномерный фон)
@@ -484,56 +526,13 @@ fun BookDetailScreen(
                             )
 
                             Text(
-                                text = mockBook["description"] ?: "Нет описания",
+                                text = descriptionText ?: "Нет описания",
                                 style = MaterialTheme.typography.bodyLarge.copy(
                                     lineHeight = 24.sp,
                                     letterSpacing = 0.15.sp
                                 ),
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
                             )
-                        }
-                    }
-
-                    // Карточка с дополнительной информацией
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 20.dp),
-                        shape = MaterialTheme.shapes.large,
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        ),
-                        elevation = CardDefaults.cardElevation(
-                            defaultElevation = 2.dp
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(20.dp)
-                        ) {
-                            Text(
-                                text = "Подробности",
-                                style = MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.SemiBold,
-                                    letterSpacing = (-0.25).sp
-                                ),
-                                color = MaterialTheme.colorScheme.secondary,
-                                modifier = Modifier.padding(bottom = 16.dp)
-                            )
-
-                            // Детали без иконок
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                SimpleDetailRow(
-                                    label = "Жанр",
-                                    value = mockBook["genre"] ?: "Не указан"
-                                )
-                                SimpleDetailRow(
-                                    label = "Язык",
-                                    value = mockBook["language"] ?: "Не указан"
-                                )
-                            }
                         }
                     }
                 }

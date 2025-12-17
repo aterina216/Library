@@ -31,7 +31,6 @@ fun BookShelfTabContent (
                 BookCard(
                     book,
                     onBookClick = { bookId ->
-                        // Заглушка для навигации - можно будет добавить позже
                         println("Нажата книга с ID: $bookId")
                     }
                 )

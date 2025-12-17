@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.library.data.database.entity.BookEntity
 import com.example.library.data.models.Book
+import com.example.library.data.models.response.BookDetailResponse
 import com.example.library.ui.BookCategory
 import com.example.library.data.repository.BookRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -55,6 +56,9 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
     private var hasMore = MutableStateFlow(true)
     val _hasMore: StateFlow<Boolean> = hasMore
     private val scrollPositions = mutableStateMapOf<BookCategory, Pair<Int, Int>>()
+
+    private var _currentBook = MutableStateFlow<BookDetailResponse?>(null)
+    val currentBook: StateFlow<BookDetailResponse?> = _currentBook
 
 
     init {
@@ -194,5 +198,16 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
 
     fun getScrollPosition(category: BookCategory): Pair<Int, Int>? {
         return scrollPositions[category]
+    }
+
+    fun openBookById(bookId: String) {
+        viewModelScope.launch {
+            try {
+                _currentBook.value = repository.getBookById(bookId)
+            }
+            catch (e: Exception) {
+                Log.e("viewmodel", "${e.message}")
+            }
+        }
     }
 }

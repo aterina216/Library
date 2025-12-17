@@ -1,8 +1,10 @@
 package com.example.library.data.mapper
 
 import com.example.library.data.database.entity.BookEntity
+import com.example.library.data.models.AuthorForDetail
 import com.example.library.data.models.Book
 import com.example.library.data.models.SearchBook
+import com.example.library.data.models.response.BookDetailResponse
 import okhttp3.internal.notifyAll
 
 object BookMapper {
@@ -13,7 +15,7 @@ object BookMapper {
 
             title = this.title,
 
-            // List<Author> -> String через запятую
+            // List<com.example.library.data.models.response.Author> -> String через запятую
             authors = this.authors.joinToString(", ") { it.name },
 
             coverId = this.cover_id,
@@ -39,4 +41,32 @@ object BookMapper {
             description = null
         )
     }
+
+    fun BookDetailResponse.toEntity(): BookEntity {
+        return BookEntity(
+            id = extractBookId(this.key) ,
+            title = this.title,
+            authors = extractAuthors(this.authors),
+            coverId = this.covers.firstOrNull(),
+            firstPublishYear =  null,
+            subjects = this.subjects.joinToString(", ") ?: "",
+            description = this.description,
+            category = ""
+        )
+    }
+
+    private fun extractBookId(key: String): String {
+        return key.substringAfterLast("/").takeIf { it.isNotBlank() } ?: key
+    }
+
+    private fun extractAuthors(authors: List<AuthorForDetail>): String {
+        return if(authors.isNotEmpty()) {
+            authors.mapNotNull {
+                it.author?.key?.substringAfterLast("/")
+            }.joinToString(", ")
+        }
+        else "Unklown author"
+    }
+
+
 }

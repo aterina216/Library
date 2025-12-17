@@ -1,5 +1,6 @@
 package com.example.library.data.api
 
+import com.example.library.data.models.response.BookDetailResponse
 import com.example.library.data.models.response.OpenLibraryResponse
 import com.example.library.data.models.response.OpenLibrarySearchResponse
 import retrofit2.http.GET
@@ -25,4 +26,9 @@ interface ApiBookService {
         @Query("limit") limit: Int = 20,
         @Query("offset") offset: Int = 0
     ): OpenLibraryResponse
+
+    @GET("works/{bookId}.json")
+    suspend fun getBookById(
+        @Path("bookId") bookId: String
+    ): BookDetailResponse
 }
