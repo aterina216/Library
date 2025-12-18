@@ -1,6 +1,7 @@
 package com.example.library.ui.screens
 
 import android.R
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -94,17 +95,25 @@ fun BookDetailScreen(
     navController: NavController,
     viewModel: BookViewModel
 ) {
-    // Состояния для выбранной полки
-    var selectedShelfStatus by remember { mutableStateOf<String?>(null) }
+
     var showShelfMenu by remember { mutableStateOf(false) }
 
     val currentBook by viewModel.currentBook.collectAsState()
 
+    val currentShelfStatus by viewModel.currentBookShelfStatus.collectAsState()
     val scrollState = rememberScrollState()
+
+
 
     LaunchedEffect(bookId) {
         viewModel.openBookById(bookId) // ✅ Просто загружаем каждый раз
     }
+
+    LaunchedEffect(currentShelfStatus) {
+        // Логируем для отладки
+        Log.d("BookDetailScreen", "Статус книги обновлен: $currentShelfStatus")
+    }
+
 
     if(currentBook == null) {
         Box(modifier = Modifier.fillMaxSize(),
@@ -141,6 +150,7 @@ fun BookDetailScreen(
             author -> author.author.key.substringAfterLast("/")
         }
     }
+
 
     Scaffold(
         topBar = {
@@ -338,7 +348,7 @@ fun BookDetailScreen(
                                 .fillMaxWidth()
                                 .clickable { showShelfMenu = true },
                             shape = MaterialTheme.shapes.extraLarge,
-                            color = when (selectedShelfStatus) {
+                            color = when (currentShelfStatus) {
                                 "want_to_read" -> MaterialTheme.colorScheme.surfaceVariant.copy(
                                     alpha = 0.8f
                                 )
@@ -347,10 +357,10 @@ fun BookDetailScreen(
                                 "read" -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
                                 else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
                             },
-                            tonalElevation = if (selectedShelfStatus != null) 1.dp else 2.dp,
+                            tonalElevation = if (currentShelfStatus != null) 1.dp else 2.dp,
                             border = BorderStroke(
                                 width = 1.dp,
-                                color = when (selectedShelfStatus) {
+                                color = when (currentShelfStatus) {
                                     "want_to_read" -> MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
                                     "reading" -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
                                     "read" -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)
@@ -369,7 +379,7 @@ fun BookDetailScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = when (selectedShelfStatus) {
+                                        text = when (currentShelfStatus) {
                                             "want_to_read" -> "📝 Хочу прочитать"
                                             "reading" -> "📖 Читаю"
                                             "read" -> "✅ Прочитано"
@@ -378,7 +388,7 @@ fun BookDetailScreen(
                                         style = MaterialTheme.typography.titleMedium.copy(
                                             fontWeight = FontWeight.Medium
                                         ),
-                                        color = when (selectedShelfStatus) {
+                                        color = when (currentShelfStatus) {
                                             "want_to_read" -> MaterialTheme.colorScheme.primary
                                             "reading" -> MaterialTheme.colorScheme.secondary
                                             "read" -> MaterialTheme.colorScheme.tertiary
@@ -389,7 +399,7 @@ fun BookDetailScreen(
                                     Icon(
                                         imageVector = Icons.Outlined.ArrowDropDown,
                                         contentDescription = null,
-                                        tint = when (selectedShelfStatus) {
+                                        tint = when (currentShelfStatus) {
                                             "want_to_read" -> MaterialTheme.colorScheme.primary.copy(
                                                 alpha = 0.7f
                                             )
@@ -446,9 +456,9 @@ fun BookDetailScreen(
                             ShelfCategoryItem(
                                 title = "📝 Хочу прочитать",
                                 description = "Для будущего чтения",
-                                isSelected = selectedShelfStatus == "want_to_read",
+                                isSelected = currentShelfStatus == "want_to_read",
                                 onClick = {
-                                    selectedShelfStatus = "want_to_read"
+                                    viewModel.addBookToShelf("want_to_read")
                                     showShelfMenu = false
                                 }
                             )
@@ -456,9 +466,9 @@ fun BookDetailScreen(
                             ShelfCategoryItem(
                                 title = "📖 Читаю",
                                 description = "Сейчас читаю",
-                                isSelected = selectedShelfStatus == "reading",
+                                isSelected = currentShelfStatus == "reading",
                                 onClick = {
-                                    selectedShelfStatus = "reading"
+                                    viewModel.addBookToShelf("reading")
                                     showShelfMenu = false
                                 }
                             )
@@ -466,15 +476,15 @@ fun BookDetailScreen(
                             ShelfCategoryItem(
                                 title = "✅ Прочитано",
                                 description = "Уже прочитал",
-                                isSelected = selectedShelfStatus == "read",
+                                isSelected = currentShelfStatus == "read",
                                 onClick = {
-                                    selectedShelfStatus = "read"
+                                    viewModel.addBookToShelf("read")
                                     showShelfMenu = false
                                 }
                             )
 
                             // Кнопка удаления, если книга уже добавлена
-                            if (selectedShelfStatus != null) {
+                            if (currentShelfStatus != null) {
                                 Divider(
                                     modifier = Modifier.padding(horizontal = 16.dp),
                                     color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
@@ -482,7 +492,7 @@ fun BookDetailScreen(
 
                                 TextButton(
                                     onClick = {
-                                        selectedShelfStatus = null
+                                        viewModel.removeBookFromShelf()
                                         showShelfMenu = false
                                     },
                                     modifier = Modifier

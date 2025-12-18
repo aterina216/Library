@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.library.data.database.entity.BookEntity
+import com.example.library.data.mapper.BookMapper.toEntity
 import com.example.library.data.models.Book
 import com.example.library.data.models.response.BookDetailResponse
 import com.example.library.ui.BookCategory
@@ -62,6 +63,10 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
 
     private var _shelfBooks = MutableStateFlow<Map<String, List<BookEntity>?>>(emptyMap())
     val shelfBooks: StateFlow<Map<String, List<BookEntity>?>> = _shelfBooks
+
+    private val _currentBookShelfStatus = MutableStateFlow<String?>(null)
+    val currentBookShelfStatus: StateFlow<String?> = _currentBookShelfStatus
+
 
     init {
         Log.d("viewmodel", "start")
@@ -205,11 +210,22 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
     fun openBookById(bookId: String) {
         viewModelScope.launch {
             try {
+                // Загружаем книгу
                 _currentBook.value = repository.getBookById(bookId)
+
+                // Загружаем текущий статус из базы
+                val status = repository.getBookShelfStatus(bookId)
+                _currentBookShelfStatus.value = status
+            } catch (e: Exception) {
+                Log.e("viewmodel", "Ошибка загрузки книги: ${e.message}")
             }
-            catch (e: Exception) {
-                Log.e("viewmodel", "${e.message}")
-            }
+        }
+    }
+
+    suspend fun updateCurrentBookShelfStatus() {
+        _currentBook.value?.let { book ->
+            val status = repository.getBookShelfStatus(book.key ?: "")
+            _currentBookShelfStatus.value = status
         }
     }
 
@@ -225,11 +241,47 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
         }
     }
 
-    fun addBookToShelf(bookEntity: BookEntity, shelfStatus: String) {
+    fun addBookToShelf(shelfStatus: String) {
         viewModelScope.launch {
-            repository.saveBookToShelf(bookEntity, shelfStatus)
+            val currentBookDetail = _currentBook.value
+            if (currentBookDetail != null) {
+                val bookEntity = currentBookDetail.toEntity()
 
+                Log.d("ViewModel", "➕ Добавляем книгу на полку: $shelfStatus")
+                Log.d("ViewModel", "📖 ID книги: ${bookEntity.id}")
 
+                repository.saveBookToShelf(bookEntity, shelfStatus)
+
+                // Сразу обновляем состояние
+                _currentBookShelfStatus.value = shelfStatus
+
+                // Обновляем кэшированные списки полок
+                val currentShelfBooks = _shelfBooks.value[shelfStatus] ?: emptyList()
+                _shelfBooks.value = _shelfBooks.value + mapOf(
+                    shelfStatus to (currentShelfBooks + bookEntity)
+                )
+            }
+        }
+    }
+
+    fun removeBookFromShelf() {
+        viewModelScope.launch {
+            val currentBookDetail = _currentBook.value
+            if (currentBookDetail != null) {
+                val bookEntity = currentBookDetail.toEntity()
+
+                Log.d("ViewModel", "🗑️ Удаляем книгу с полки")
+                Log.d("ViewModel", "📖 ID книги: ${bookEntity.id}")
+
+                repository.removeBookFromShelf(bookEntity, null)
+                _currentBookShelfStatus.value = null
+
+                // Удаляем книгу из всех кэшированных списков
+                val updatedShelves = _shelfBooks.value.mapValues { (status, books) ->
+                    books?.filter { it.id != bookEntity.id } ?: emptyList()
+                }
+                _shelfBooks.value = updatedShelves
+            }
         }
     }
 }

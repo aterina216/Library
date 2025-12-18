@@ -44,19 +44,26 @@ object BookMapper {
 
     fun BookDetailResponse.toEntity(): BookEntity {
         return BookEntity(
-            id = extractBookId(this.key) ,
-            title = this.title,
-            authors = extractAuthors(this.authors),
-            coverId = this.covers.firstOrNull(),
-            firstPublishYear =  null,
-            subjects = this.subjects.joinToString(", ") ?: "",
-            description = this.description,
-            category = ""
+            id = extractBookId(this.key),
+            title = this.title ?: "No title",
+            authors = this.authors?.joinToString(", ") {
+                it.author?.key?.substringAfterLast("/") ?: "Unknown"
+            } ?: "Unknown author",
+            coverId = this.covers?.firstOrNull(),
+            firstPublishYear = null, // В BookDetailResponse нет года, можешь парсить из description если нужно
+            subjects = this.subjects?.joinToString(", ") ?: "",
+            description = when (val desc = this.description) {
+                is String -> desc
+                is Map<*, *> -> desc["value"] as? String
+                else -> null
+            },
+            category = "", // или можешь оставить пустым
+            shelfStatus = null // Не устанавливаем здесь, установится при сохранении
         )
     }
 
     private fun extractBookId(key: String): String {
-        return key.substringAfterLast("/").takeIf { it.isNotBlank() } ?: key
+        return key.substringAfterLast("/").takeIf { it.isNotEmpty() } ?: "unknown"
     }
 
     private fun extractAuthors(authors: List<AuthorForDetail>): String {

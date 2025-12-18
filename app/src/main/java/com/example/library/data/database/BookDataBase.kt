@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import com.example.library.data.database.dao.BookDao
 import com.example.library.data.database.entity.BookEntity
 
-@Database(entities = [BookEntity::class], exportSchema = false, version = 2)
+@Database(entities = [BookEntity::class], exportSchema = false, version = 3)
 abstract class BookDataBase: RoomDatabase() {
 
     abstract fun getDao(): BookDao

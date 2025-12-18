@@ -88,7 +88,19 @@ class BookRepository(
     }
 
     suspend fun saveBookToShelf(book: BookEntity, status: String) {
-        db.getDao().updateBookShelfStatus(bookID = book.id, status)
+        // ПРОВЕРЯЕМ, ЕСТЬ ЛИ КНИГА В БАЗЕ
+        val existingBook = db.getDao().getById(book.id)
+
+        if (existingBook == null) {
+            // Если книги нет - ВСТАВЛЯЕМ новую с нужным статусом
+            val newBook = book.copy(shelfStatus = status)
+            db.getDao().insertBook(newBook)
+            Log.d("Repository", "📚 Книга вставлена в БД: ${book.id}, статус: $status")
+        } else {
+            // Если книга есть - ОБНОВЛЯЕМ статус
+            db.getDao().updateBookShelfStatus(bookID = book.id, status)
+            Log.d("Repository", "📝 Статус обновлен: ${book.id}, статус: $status")
+        }
     }
 
     suspend fun getBooksFromShelf(status: String): List<BookEntity>? {
@@ -96,6 +108,17 @@ class BookRepository(
     }
 
     suspend fun removeBookFromShelf(book: BookEntity, status: String?) {
-        return db.getDao().updateBookShelfStatus(book.id, null)
+        val existingBook = db.getDao().getById(book.id)
+
+        if (existingBook != null) {
+            db.getDao().updateBookShelfStatus(book.id, null)
+            Log.d("Repository", "🗑️ Статус удален: ${book.id}")
+        } else {
+            Log.d("Repository", "⚠️ Книги нет в БД, нечего удалять")
+        }
+    }
+
+    suspend fun getBookShelfStatus(bookId: String): String? {
+        return db.getDao().getById(bookId)?.shelfStatus
     }
 }
