@@ -60,6 +60,8 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
     private var _currentBook = MutableStateFlow<BookDetailResponse?>(null)
     val currentBook: StateFlow<BookDetailResponse?> = _currentBook
 
+    private var _shelfBooks = MutableStateFlow<Map<String, List<BookEntity>?>>(emptyMap())
+    val shelfBooks: StateFlow<Map<String, List<BookEntity>?>> = _shelfBooks
 
     init {
         Log.d("viewmodel", "start")
@@ -208,6 +210,26 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
             catch (e: Exception) {
                 Log.e("viewmodel", "${e.message}")
             }
+        }
+    }
+
+    fun loadShelfBooks(status: String) {
+        viewModelScope.launch {
+            try {
+                val books = repository.getBooksFromShelf(status)
+                _shelfBooks.value = _shelfBooks.value + mapOf(status to books)
+            }
+            catch (e: Exception) {
+                Log.e("ViewModel", "❌ Ошибка загрузки полки: ${e.message}")
+            }
+        }
+    }
+
+    fun addBookToShelf(bookEntity: BookEntity, shelfStatus: String) {
+        viewModelScope.launch {
+            repository.saveBookToShelf(bookEntity, shelfStatus)
+
+
         }
     }
 }

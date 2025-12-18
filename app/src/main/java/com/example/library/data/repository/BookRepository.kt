@@ -86,4 +86,16 @@ class BookRepository(
             return null
         }
     }
+
+    suspend fun saveBookToShelf(book: BookEntity, status: String) {
+        db.getDao().updateBookShelfStatus(bookID = book.id, status)
+    }
+
+    suspend fun getBooksFromShelf(status: String): List<BookEntity>? {
+        return db.getDao().selectBooksByShelfStatus(status)
+    }
+
+    suspend fun removeBookFromShelf(book: BookEntity, status: String?) {
+        return db.getDao().updateBookShelfStatus(book.id, null)
+    }
 }

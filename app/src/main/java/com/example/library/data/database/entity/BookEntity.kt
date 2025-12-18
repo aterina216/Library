@@ -19,5 +19,8 @@ data class BookEntity (
     val description: String?,
 
     @ColumnInfo(defaultValue = "")
-    val category: String = ""
+    val category: String = "",
+
+    @ColumnInfo(name ="shelf_status")
+    val shelfStatus: String? = null
 )

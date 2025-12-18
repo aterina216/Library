@@ -33,4 +33,10 @@ interface BookDao {
     @Query("SELECT * FROM books WHERE category = :category")
     suspend fun getBooksByCategory(category: String): List<BookEntity>
 
+
+    @Query("UPDATE books SET shelf_status = :status WHERE id = :bookID")
+    suspend fun updateBookShelfStatus(bookID: String, status: String?)
+
+    @Query("SELECT * FROM books WHERE shelf_status = :status")
+    suspend fun selectBooksByShelfStatus(status: String): List<BookEntity>
 }

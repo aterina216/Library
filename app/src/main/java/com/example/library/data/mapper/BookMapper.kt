@@ -67,6 +67,4 @@ object BookMapper {
         }
         else "Unklown author"
     }
-
-
 }
