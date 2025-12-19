@@ -39,4 +39,14 @@ interface BookDao {
 
     @Query("SELECT * FROM books WHERE shelf_status = :status")
     suspend fun selectBooksByShelfStatus(status: String): List<BookEntity>
+
+    @Query("UPDATE books SET viewAt = :viewAt WHERE id = :bookID")
+    suspend fun updateViewAt(bookID: String, viewAt: Long)
+
+    @Query("SELECT * FROM books WHERE viewAt > 0 ORDER BY viewAt DESC LIMIT 100")
+    suspend fun getBooksByViewTime(): List<BookEntity>
+
+    @Query("UPDATE books SET viewAt = 0 WHERE viewAt > 0")
+    suspend fun clearHistory()
+
 }

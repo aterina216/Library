@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 
@@ -66,6 +67,9 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
 
     private val _currentBookShelfStatus = MutableStateFlow<String?>(null)
     val currentBookShelfStatus: StateFlow<String?> = _currentBookShelfStatus
+
+    private var booksInHistory = MutableStateFlow<List<BookEntity?>>(emptyList())
+    val _booksInHistory: StateFlow<List<BookEntity?>> = booksInHistory
 
 
     init {
@@ -129,7 +133,7 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
             return
         }
 
-        if(query!= currentSearchQuery) {
+        if (query != currentSearchQuery) {
             currentSearchQuery = query
             searchPage = 1
             _hasMoreSearch.value = true
@@ -144,21 +148,22 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
                 val books = repository.searchBooks(query, 20, searchPage)
                 if (searchPage == 1) {
                     searchBooks.value = books
-                }
-                else {
+                } else {
                     val currentResults = searchBooks.value
                     searchBooks.value = currentResults + books
                 }
 
                 _hasMoreSearch.value = books.size == 20
                 searchPage++
-                Log.d("ViewModel", "✅ Поиск: загружено ${books.size} книг, всего ${searchBooks.value.size}")
+                Log.d(
+                    "ViewModel",
+                    "✅ Поиск: загружено ${books.size} книг, всего ${searchBooks.value.size}"
+                )
 
             } catch (e: Exception) {
                 Log.e("ViewModel", "❌ Ошибка поиска: ${e.message}")
                 _hasMoreSearch.value = false
-            }
-            finally {
+            } finally {
                 _isSearching.value = false
                 _isLoadingMoreSearch.value = false
             }
@@ -166,14 +171,17 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
     }
 
     fun loadMoreSearch() {
-        if(!_hasMoreSearch.value || _isSearching.value || currentSearchQuery.isEmpty()) {
+        if (!_hasMoreSearch.value || _isSearching.value || currentSearchQuery.isEmpty()) {
             return
         }
         _isLoadingMoreSearch.value = true
 
         viewModelScope.launch {
             try {
-                Log.d("ViewModel", "🔄 Догружаем еще для '$currentSearchQuery', страница $searchPage")
+                Log.d(
+                    "ViewModel",
+                    "🔄 Догружаем еще для '$currentSearchQuery', страница $searchPage"
+                )
                 val books = repository.searchBooks(
                     query = currentSearchQuery,
                     pageSize = 20,
@@ -188,9 +196,11 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
                 // Увеличиваем счетчик
                 searchPage++
 
-                Log.d("ViewModel", "✅ Догружено ${books.size} книг, всего ${searchBooks.value.size}")
-            }
-            catch (e: Exception) {
+                Log.d(
+                    "ViewModel",
+                    "✅ Догружено ${books.size} книг, всего ${searchBooks.value.size}"
+                )
+            } catch (e: Exception) {
                 Log.e("ViewModel", "❌ Ошибка догрузки: ${e.message}")
                 _hasMoreSearch.value = false
             } finally {
@@ -210,33 +220,21 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
     fun openBookById(bookId: String) {
         viewModelScope.launch {
             try {
-                // Загружаем книгу
                 _currentBook.value = repository.getBookById(bookId)
-
-                // Загружаем текущий статус из базы
                 val status = repository.getBookShelfStatus(bookId)
                 _currentBookShelfStatus.value = status
+
+                // Сохраняем книгу в базу!
+                _currentBook.value?.let { book ->
+                    val bookEntity = book.toEntity()
+                    repository.upsertBookForHistory(bookEntity)
+                    booksInHistory.value = booksInHistory.value + bookEntity
+                }
+
+                Log.d("ViewModel", "✅ Книга сохранена и время обновлено: $bookId")
+
             } catch (e: Exception) {
-                Log.e("viewmodel", "Ошибка загрузки книги: ${e.message}")
-            }
-        }
-    }
-
-    suspend fun updateCurrentBookShelfStatus() {
-        _currentBook.value?.let { book ->
-            val status = repository.getBookShelfStatus(book.key ?: "")
-            _currentBookShelfStatus.value = status
-        }
-    }
-
-    fun loadShelfBooks(status: String) {
-        viewModelScope.launch {
-            try {
-                val books = repository.getBooksFromShelf(status)
-                _shelfBooks.value = _shelfBooks.value + mapOf(status to books)
-            }
-            catch (e: Exception) {
-                Log.e("ViewModel", "❌ Ошибка загрузки полки: ${e.message}")
+                Log.e("viewmodel", "Ошибка: ${e.message}")
             }
         }
     }
@@ -281,6 +279,41 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
                     books?.filter { it.id != bookEntity.id } ?: emptyList()
                 }
                 _shelfBooks.value = updatedShelves
+            }
+        }
+    }
+
+    fun loadAllShelves() {
+        viewModelScope.launch {
+            val statuses = listOf("want_to_read", "reading", "read")
+            statuses.forEach { status ->
+                val books = repository.getBooksFromShelf(status) ?: emptyList()
+                _shelfBooks.value = _shelfBooks.value + mapOf(status to books)
+                Log.d("ViewModel", "✅ Загружено ${books.size} книг для статуса: $status")
+            }
+        }
+    }
+
+
+    fun loadHistory() {
+        viewModelScope.launch {
+           try {
+               booksInHistory.value = repository.getViewHistory()
+           }
+           catch (e: Exception) {
+               Log.e("viewmodel", "${e.message}")
+           }
+        }
+    }
+
+    fun clearHistory() {
+        viewModelScope.launch {
+            try {
+                booksInHistory.value = emptyList()
+                repository.clearHistory()
+            }
+            catch (e: Exception) {
+                Log.e("viewmodel", "${e.message}")
             }
         }
     }

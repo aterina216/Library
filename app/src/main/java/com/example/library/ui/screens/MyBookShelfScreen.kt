@@ -15,6 +15,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,36 +28,27 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.library.data.database.entity.BookEntity
 import com.example.library.ui.components.BookShelfTabContent
+import com.example.library.ui.viewmodels.BookViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MyBookShelfScreen() {
+fun MyBookShelfScreen(viewModel: BookViewModel, navController: NavController) {
     var selectedTabIndex by remember { mutableStateOf(0) }
 
-    val tabTitles = listOf("Хочу прочитать", "Читаю", "Прочитано")
-
-    val exampleBooks = listOf(
-        BookEntity(
-            id = "/works/OL2732070W",
-            title = "1984",
-            authors = "Джордж Оруэлл",
-            coverId = 10614930,
-            firstPublishYear = 1949,
-            subjects = "Дистопия, Политическая литература, Научная фантастика",
-            description = null
-        ),
-        BookEntity(
-            id = "/works/OL2766521W",
-            title = "Мастер и Маргарита",
-            authors = "Михаил Булгаков",
-            coverId = 10614931,
-            firstPublishYear = 1967,
-            subjects = "Мистика, Сатира, Классическая литература",
-            description = null
-        )
+    val tabToStatusMap = listOf(
+        "want_to_read" to "Хочу прочитать",
+        "reading" to "Читаю",
+        "read" to "Прочитано"
     )
+
+    val shelfBooks by viewModel.shelfBooks.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadAllShelves()
+    }
 
     Column(modifier = Modifier
         .fillMaxSize()
@@ -68,6 +61,7 @@ fun MyBookShelfScreen() {
             )
         ))
     {
+        // Заголовок экрана
         Box(modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
@@ -86,6 +80,7 @@ fun MyBookShelfScreen() {
             )
         }
 
+        // Табы
         Row (
             modifier = Modifier
                 .fillMaxWidth()
@@ -95,8 +90,7 @@ fun MyBookShelfScreen() {
                 ),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ){
-            tabTitles.forEachIndexed {
-                index, title ->
+            tabToStatusMap.forEachIndexed { index, (statusKey, titleText) ->  // ← Деструктурируем пару
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -118,41 +112,47 @@ fun MyBookShelfScreen() {
                         .padding(vertical = 12.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.labelLarge.copy(
-                            fontWeight = if (selectedTabIndex == index) FontWeight.Bold else
-                                FontWeight.Medium
-                        ),
-                        color = if (selectedTabIndex == index)
+                    // Внутри каждого таба должен быть свой текст, а не "Книжная полка"
+                    val textColor = if (selectedTabIndex == index) {
                         MaterialTheme.colorScheme.primary
-                        else
+                    } else {
                         MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    }
+
+                    Text(
+                        text = titleText,  // ← Вот здесь должно быть название таба!
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Medium
+                        ),
+                        color = textColor
                     )
                 }
             }
         }
 
+        // Контент табов
         when (selectedTabIndex) {
             0 -> BookShelfTabContent(
-                status = "Хочу прочитать",
+                status = tabToStatusMap[0].second,
                 icon = "📝",
                 message = "Книги, которые вы планируете прочитать",
-                books = exampleBooks // Передаем примеры книг для этой вкладки
+                books = shelfBooks[tabToStatusMap[0].first] ?: emptyList(),
+                navController = navController,
             )
             1 -> BookShelfTabContent(
-                status = "Читаю",
+                status = tabToStatusMap[1].second,
                 icon = "📖",
                 message = "Книги, которые вы сейчас читаете",
-                books = emptyList() // Пустой список для других вкладок
+                books = shelfBooks[tabToStatusMap[1].first] ?: emptyList(),
+                navController = navController,
             )
             2 -> BookShelfTabContent(
-                status = "Прочитано",
+                status = tabToStatusMap[2].second,
                 icon = "✅",
                 message = "Книги, которые вы уже прочитали",
-                books = emptyList() // Пустой список для других вкладок
+                books = shelfBooks[tabToStatusMap[2].first] ?: emptyList(),
+                navController
             )
         }
     }
-
 }

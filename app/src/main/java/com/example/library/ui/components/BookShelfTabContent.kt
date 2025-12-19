@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.library.data.database.entity.BookEntity
 import com.example.library.ui.states.EmptyShelfState
 
@@ -16,7 +17,8 @@ fun BookShelfTabContent (
     status: String,
     icon: String,
     message: String,
-    books: List<BookEntity>
+    books: List<BookEntity>,
+    navController: NavController
 ){
     if(books.isEmpty()) {
         EmptyShelfState(icon, message)
@@ -30,8 +32,8 @@ fun BookShelfTabContent (
                 book ->
                 BookCard(
                     book,
-                    onBookClick = { bookId ->
-                        println("Нажата книга с ID: $bookId")
+                    onBookClick = { workId ->
+                        navController.navigate("book_detail/$workId")
                     }
                 )
             }

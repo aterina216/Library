@@ -22,5 +22,7 @@ data class BookEntity (
     val category: String = "",
 
     @ColumnInfo(name ="shelf_status")
-    val shelfStatus: String? = null
+    val shelfStatus: String? = null,
+
+    var  viewAt: Long = 0
 )

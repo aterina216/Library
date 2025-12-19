@@ -48,10 +48,10 @@ fun InitNavigation(viewModel: BookViewModel) {
                 HomeScreen(viewModel, navigationController)
             }
             composable("history") {
-                HistoryScreen()
+                HistoryScreen(viewModel, navigationController)
             }
             composable("book_shelf") {
-                MyBookShelfScreen()
+                MyBookShelfScreen(viewModel, navigationController)
             }
 
             composable("book_detail/{bookId}",

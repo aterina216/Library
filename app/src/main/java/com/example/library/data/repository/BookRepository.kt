@@ -121,4 +121,46 @@ class BookRepository(
     suspend fun getBookShelfStatus(bookId: String): String? {
         return db.getDao().getById(bookId)?.shelfStatus
     }
+
+
+    suspend fun upsertBookForHistory(book: BookEntity) {
+        try {
+            val existingBook = db.getDao().getById(book.id)
+
+            val bookToSave = if (existingBook != null) {
+                // Если книга уже есть в базе - сохраняем ее статус!
+                book.copy(
+                    shelfStatus = existingBook.shelfStatus,  // ← вот это важно!
+                    viewAt = System.currentTimeMillis()
+                )
+            } else {
+                // Если книги нет - создаем новую без статуса
+                book.copy(viewAt = System.currentTimeMillis())
+            }
+
+            db.getDao().insertBook(bookToSave)
+            Log.d("Repository", "✅ Книга обновлена, статус сохранен: ${book.title}")
+
+        } catch (e: Exception) {
+            Log.e("Repository", "❌ Ошибка: ${e.message}")
+        }
+    }
+
+    suspend fun getViewHistory(): List<BookEntity> {
+        return try {
+            db.getDao().getBooksByViewTime()
+        }
+        catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun clearHistory() {
+        try {
+            db.getDao().clearHistory()
+        }
+        catch (e: Exception) {
+            Log.e("repo", "${e.message}")
+        }
+    }
 }
