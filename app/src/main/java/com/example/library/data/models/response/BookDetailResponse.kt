@@ -9,7 +9,7 @@ data class BookDetailResponse(
     val authors: List<AuthorForDetail>,
     val covers: List<Int>,
     val created: Created,
-    val description: String,
+    val description: Any?,
     val key: String,
     val last_modified: LastModified,
     val latest_revision: Int,

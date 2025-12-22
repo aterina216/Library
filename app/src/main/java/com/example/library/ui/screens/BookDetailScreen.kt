@@ -1,12 +1,18 @@
 package com.example.library.ui.screens
 
+import android.Manifest
 import android.R
+import android.app.Activity
 import android.graphics.drawable.Icon
 import android.os.Build
 import android.util.Log
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -107,6 +113,7 @@ import kotlin.collections.mapOf
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -126,8 +133,17 @@ import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.SegmentedButtonDefaults.Icon
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
+import androidx.core.app.ActivityCompat
+import com.example.library.data.mapper.BookMapper.getSafeDescription
+import com.example.library.ui.states.DownloadState
+import com.example.library.utils.BookSharingUtils.shareBook
+import com.example.library.utils.DownloadCover.startDownload
 import com.example.library.utils.FormatterDate.formatOpenLibraryDate
+import com.example.library.utils.PermissionHelper
+import com.example.library.utils.PermissionHelper.showPermissionRationale
 
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -146,7 +162,39 @@ fun BookDetailScreen(
     val currentShelfStatus by viewModel.currentBookShelfStatus.collectAsState()
     val scrollState = rememberScrollState()
 
+    val context = LocalContext.current
 
+    val downloadState = remember { DownloadState() }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) {
+        permissions ->
+        Log.d("Download", "Результат разрешений: $permissions")
+        val allGranted = permissions[Manifest.permission.WRITE_EXTERNAL_STORAGE] == true
+        if(allGranted) {
+            Log.d("Download", "Все разрешения получены, начинаю загрузку")
+            currentBook?.let {book ->
+                val coverId = book.covers.firstOrNull()
+                if (coverId != null) {
+                    startDownload(
+                        context = context,
+                        bookTitle = book.title ?: "Book",
+                        coverId = coverId,
+                        downloadState = downloadState
+                    )
+                }
+                else {
+                    downloadState.downLoadError = "Обложка недоступна"
+                }
+            }
+        }
+        else {
+            Log.d("Download", "Не все разрешения предоставлены")
+            showPermissionRationale(context)
+            downloadState.downLoadError = "Разрешения не предоставлены"
+        }
+    }
 
     LaunchedEffect(bookId) {
         viewModel.openBookById(bookId) // ✅ Просто загружаем каждый раз
@@ -181,16 +229,7 @@ fun BookDetailScreen(
     }
 
     val descriptionText = remember(book.description) {
-        try {
-            when (val desc = book.description) {
-                is String -> desc
-                is Map<*, *> -> desc["value"] as? String ?: ""
-                else -> ""
-            }
-        } catch (e: Exception) {
-            Log.e("BookDetail", "Ошибка парсинга описания: ${e.message}")
-            ""
-        }
+        book.getSafeDescription() ?: ""
     }
 
     val authorsText = remember(book.authors) {
@@ -234,7 +273,68 @@ fun BookDetailScreen(
                     }
                 }
             )
-        }
+        },
+        floatingActionButton = {
+            Row (modifier = Modifier.padding(end = 16.dp, bottom = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+
+                androidx.compose.material3.FloatingActionButton(
+                    onClick = {
+                        currentBook?.let {book->
+                            shareBook(context, book)
+                        }
+                    }
+                ) {
+                    Icon(Icons.Filled.Share, contentDescription = "Поделиться", tint = MaterialTheme.colorScheme.primary)
+                }
+                androidx.compose.material3.FloatingActionButton(
+                    onClick = {
+                        Log.d("Download", "Нажата кнопка загрузки, coverId = ${currentBook?.covers?.firstOrNull()}")
+                        val coverId = currentBook?.covers?.firstOrNull()
+                        if (coverId != null) {
+                            // Простой прямой вызов без сложной логики
+                            if (PermissionHelper.hasStoragePermission(context)) {
+                                Log.d("Download", "Разрешения уже есть, начинаю загрузку")
+                                startDownload(
+                                    context = context,
+                                    bookTitle = currentBook!!.title ?: "Book",
+                                    coverId = coverId,
+                                    downloadState = downloadState
+                                )
+                            } else {
+                                Log.d("Download", "Запрашиваю разрешения")// Просто запрашиваем разрешения
+                                if (ActivityCompat.shouldShowRequestPermissionRationale(
+                                        context as Activity,
+                                        Manifest.permission.WRITE_EXTERNAL_STORAGE
+                                    )) {
+                                    showPermissionRationale(context)
+                                } else {
+                                    permissionLauncher.launch(PermissionHelper.getRequiredPermissions())
+                                }
+                            }
+                        } else {
+                            Log.d("Download", "Нет coverId, обложка недоступна")
+                            Toast.makeText(context, "Обложка недоступна", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                ) {
+                    Image(
+                        painter = painterResource(id = com.example.library.R.drawable.download),
+                        contentDescription = "Скачать",
+                        modifier = Modifier.size(24.dp),
+                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
+                    )
+                }
+
+                androidx.compose.material3.FloatingActionButton(
+                    onClick = {}
+                ) {
+                    Icon(Icons.Default.DateRange, contentDescription = "Напомнить", tint = MaterialTheme.colorScheme.primary)
+                }
+            }
+        },
+
+
     ) { PaddingValues ->
         Box(
             modifier = Modifier

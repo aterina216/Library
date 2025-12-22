@@ -57,8 +57,8 @@ object BookMapper {
                 is Map<*, *> -> desc["value"] as? String
                 else -> null
             },
-            category = "", // или можешь оставить пустым
-            shelfStatus = null // Не устанавливаем здесь, установится при сохранении
+            category = "",
+            shelfStatus = null
         )
     }
 
@@ -73,5 +73,20 @@ object BookMapper {
             }.joinToString(", ")
         }
         else "Unklown author"
+    }
+
+    fun BookDetailResponse.getSafeDescription(): String? {
+        return when (this.description) {
+            is String -> this.description as String
+            is Map<*, *> -> {
+                val map = this.description as Map<*, *>
+                (map["value"] as? String)
+            }
+            is com.google.gson.JsonObject -> {
+                // Если используете Gson
+                this.description.asJsonObject.get("value")?.asString
+            }
+            else -> null
+        }
     }
 }
