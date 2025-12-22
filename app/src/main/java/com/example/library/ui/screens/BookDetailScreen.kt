@@ -1,7 +1,11 @@
 package com.example.library.ui.screens
 
 import android.R
+import android.graphics.drawable.Icon
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -9,12 +13,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,11 +31,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Chip
 import androidx.compose.material.ChipDefaults
 import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material.icons.outlined.Check
@@ -42,12 +50,14 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ButtonElevation
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -60,18 +70,20 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -86,8 +98,39 @@ import com.example.library.ui.components.BadgeItem
 import com.example.library.ui.components.ShelfCategoryItem
 import com.example.library.ui.components.SimpleDetailRow
 import com.example.library.ui.viewmodels.BookViewModel
+import java.text.SimpleDateFormat
+import java.util.Locale
+import kotlin.collections.buildList
 import kotlin.collections.mapOf
 
+
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.ArrowDropDown
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Create
+import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Menu
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Warning
+import androidx.compose.material3.Button
+import androidx.compose.material3.SegmentedButtonDefaults.Icon
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.Dp
+import com.example.library.utils.FormatterDate.formatOpenLibraryDate
+
+
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookDetailScreen(
@@ -138,16 +181,21 @@ fun BookDetailScreen(
     }
 
     val descriptionText = remember(book.description) {
-        when (book.description){
-            is String -> book.description
-            is Map<*, *> -> book.description["value"]as? String?
-            else -> ""
+        try {
+            when (val desc = book.description) {
+                is String -> desc
+                is Map<*, *> -> desc["value"] as? String ?: ""
+                else -> ""
+            }
+        } catch (e: Exception) {
+            Log.e("BookDetail", "Ошибка парсинга описания: ${e.message}")
+            ""
         }
     }
 
     val authorsText = remember(book.authors) {
         book.authors.joinToString(", ") {
-            author -> author.author.key.substringAfterLast("/")
+                author -> author.author.key.substringAfterLast("/")
         }
     }
 
@@ -545,6 +593,608 @@ fun BookDetailScreen(
                             )
                         }
                     }
+                    if (book.subjects.isNotEmpty()) {
+                        var isExpanded by remember { mutableStateOf(false) }
+                        val maxLines = 4 // Максимальное количество строк в свернутом состоянии
+
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            shape = MaterialTheme.shapes.large,
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(20.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "🏷️ Темы и категории",
+                                        style = MaterialTheme.typography.titleLarge.copy(
+                                            fontWeight = FontWeight.SemiBold,
+                                            letterSpacing = (-0.25).sp
+                                        ),
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+
+                                    // Количество тегов
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                                    ) {
+                                        Text(
+                                            text = "${book.subjects.size}",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                // Теги с автоматическим переносом и ограничением строк
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(max = if (!isExpanded) 150.dp else Dp.Unspecified) // Примерная высота 4 строк
+                                ) {
+                                    FlowRow(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                                        maxItemsInEachRow = 5
+                                    ) {
+                                        book.subjects.forEach { subject ->
+                                            // Определяем цвет тега по типу
+                                            val tagColor = when {
+                                                subject.contains("fiction", ignoreCase = true) ->
+                                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                                                subject.contains("author", ignoreCase = true) ->
+                                                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)
+                                                subject.contains("english", ignoreCase = true) ||
+                                                        subject.contains("welsh", ignoreCase = true) ->
+                                                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f)
+                                                subject.contains("children", ignoreCase = true) ->
+                                                    Color(0xFFFFF3E0) // Светло-оранжевый
+                                                else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                            }
+
+                                            val textColor = when {
+                                                subject.contains("fiction", ignoreCase = true) ->
+                                                    MaterialTheme.colorScheme.primary
+                                                subject.contains("author", ignoreCase = true) ->
+                                                    MaterialTheme.colorScheme.secondary
+                                                subject.contains("english", ignoreCase = true) ||
+                                                        subject.contains("welsh", ignoreCase = true) ->
+                                                    MaterialTheme.colorScheme.tertiary
+                                                else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                            }
+
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(16.dp))
+                                                    .background(tagColor)
+                                                    .border(
+                                                        width = 1.dp,
+                                                        color = textColor.copy(alpha = 0.2f),
+                                                        shape = RoundedCornerShape(16.dp)
+                                                    )
+                                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                                            ) {
+                                                Text(
+                                                    text = subject,
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = textColor,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    // Затемнение для намека на скрытый контент
+                                    if (!isExpanded) {
+                                        Box(
+                                            modifier = Modifier
+                                                .matchParentSize()
+                                                .background(
+                                                    brush = Brush.verticalGradient(
+                                                        colors = listOf(
+                                                            Color.Transparent,
+                                                            MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                                                            MaterialTheme.colorScheme.surface
+                                                        ),
+                                                        startY = 0f,
+                                                        endY = 500f
+                                                    )
+                                                )
+                                        )
+                                    }
+                                }
+
+                                // Кнопка разворачивания/сворачивания
+                                if (book.subjects.size > 20) { // Показывать кнопку только если тегов много
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        TextButton(
+                                            onClick = { isExpanded = !isExpanded },
+                                            colors = ButtonDefaults.textButtonColors(
+                                                contentColor = MaterialTheme.colorScheme.primary
+                                            ),
+                                            shape = RoundedCornerShape(12.dp)
+                                        ) {
+                                            Text(
+                                                text = if (isExpanded) "Свернуть" else "Показать все",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Icon(
+                                                imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                                contentDescription = if (isExpanded) "Свернуть" else "Развернуть",
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // Статистика по типам тегов
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                                        .padding(12.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    // Подсчитываем количество по категориям
+                                    val fictionCount = book.subjects.count {
+                                        it.contains("fiction", ignoreCase = true)
+                                    }
+                                    val authorsCount = book.subjects.count {
+                                        it.contains("author", ignoreCase = true)
+                                    }
+                                    val languagesCount = book.subjects.count { subject ->
+                                        subject.contains("english", ignoreCase = true) ||
+                                                subject.contains("welsh", ignoreCase = true) ||
+                                                subject.contains("french", ignoreCase = true) ||
+                                                subject.contains("spanish", ignoreCase = true)
+                                    }
+
+                                    if (fictionCount > 0) {
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Text(
+                                                text = "📚",
+                                                fontSize = 18.sp
+                                            )
+                                            Text(
+                                                text = "$fictionCount",
+                                                style = MaterialTheme.typography.labelLarge.copy(
+                                                    fontWeight = FontWeight.Bold
+                                                ),
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                            Text(
+                                                text = "жанры",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                            )
+                                        }
+                                    }
+
+                                    if (authorsCount > 0) {
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Text(
+                                                text = "✍️",
+                                                fontSize = 18.sp
+                                            )
+                                            Text(
+                                                text = "$authorsCount",
+                                                style = MaterialTheme.typography.labelLarge.copy(
+                                                    fontWeight = FontWeight.Bold
+                                                ),
+                                                color = MaterialTheme.colorScheme.secondary
+                                            )
+                                            Text(
+                                                text = "авторы",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                            )
+                                        }
+                                    }
+
+                                    if (languagesCount > 0) {
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Text(
+                                                text = "🌐",
+                                                fontSize = 18.sp
+                                            )
+                                            Text(
+                                                text = "$languagesCount",
+                                                style = MaterialTheme.typography.labelLarge.copy(
+                                                    fontWeight = FontWeight.Bold
+                                                ),
+                                                color = MaterialTheme.colorScheme.tertiary
+                                            )
+                                            Text(
+                                                text = "языки",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                            )
+                                        }
+                                    }
+
+                                    // Общее количество
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = "🏷️",
+                                            fontSize = 18.sp
+                                        )
+                                        Text(
+                                            text = "${book.subjects.size}",
+                                            style = MaterialTheme.typography.labelLarge.copy(
+                                                fontWeight = FontWeight.Bold
+                                            ),
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = "всего",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (book.subject_people.isNotEmpty()) {
+                        var isExpandedPeople by remember { mutableStateOf(false) }
+
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 20.dp),
+                            shape = MaterialTheme.shapes.large,
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(20.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "👥 Персонажи книги",
+                                        style = MaterialTheme.typography.titleLarge.copy(
+                                            fontWeight = FontWeight.SemiBold,
+                                            letterSpacing = (-0.25).sp
+                                        ),
+                                        color = MaterialTheme.colorScheme.secondary
+                                    )
+
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f))
+                                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                                    ) {
+                                        Text(
+                                            text = "${book.subject_people.size}",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.secondary,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                // Теги персонажей с автопереносом
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(max = if (!isExpandedPeople) 120.dp else Dp.Unspecified)
+                                ) {
+                                    FlowRow(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                                        maxItemsInEachRow = 3
+                                    ) {
+                                        book.subject_people.forEach { person ->
+                                            // Очищаем имя от лишней информации
+                                            val cleanPerson = person.replace(Regex("\\(.*?\\)"), "").trim()
+
+                                            // Определяем цвет в зависимости от типа персонажа
+                                            val backgroundColor = when {
+                                                person.contains("Fictitious character", ignoreCase = true) ->
+                                                    MaterialTheme.colorScheme.tertiaryContainer
+                                                person.contains("Historical figure", ignoreCase = true) ->
+                                                    MaterialTheme.colorScheme.secondaryContainer
+                                                person.contains("Author", ignoreCase = true) ->
+                                                    MaterialTheme.colorScheme.primaryContainer
+                                                else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                            }
+
+                                            val textColor = when {
+                                                person.contains("Fictitious character", ignoreCase = true) ->
+                                                    MaterialTheme.colorScheme.onTertiaryContainer
+                                                person.contains("Historical figure", ignoreCase = true) ->
+                                                    MaterialTheme.colorScheme.onSecondaryContainer
+                                                person.contains("Author", ignoreCase = true) ->
+                                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                                else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                            }
+
+                                            Card(
+                                                modifier = Modifier,
+                                                shape = RoundedCornerShape(12.dp),
+                                                colors = CardDefaults.cardColors(
+                                                    containerColor = backgroundColor
+                                                ),
+                                                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    // Иконка для типа персонажа
+                                                    val icon = when {
+                                                        person.contains("Fictitious character", ignoreCase = true) -> "👤"
+                                                        person.contains("Historical figure", ignoreCase = true) -> "👑"
+                                                        person.contains("Author", ignoreCase = true) -> "✍️"
+                                                        person.contains("Detective", ignoreCase = true) -> "🔍"
+                                                        person.contains("King", ignoreCase = true) -> "👑"
+                                                        person.contains("Queen", ignoreCase = true) -> "👑"
+                                                        else -> "👤"
+                                                    }
+
+                                                    Text(
+                                                        text = icon,
+                                                        fontSize = 14.sp,
+                                                        modifier = Modifier.padding(end = 6.dp)
+                                                    )
+
+                                                    Text(
+                                                        text = cleanPerson,
+                                                        style = MaterialTheme.typography.labelMedium,
+                                                        color = textColor,
+                                                        maxLines = 2,
+                                                        overflow = TextOverflow.Ellipsis,
+                                                        modifier = Modifier.weight(1f)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // Затемнение для скрытого контента
+                                    if (!isExpandedPeople) {
+                                        Box(
+                                            modifier = Modifier
+                                                .matchParentSize()
+                                                .background(
+                                                    brush = Brush.verticalGradient(
+                                                        colors = listOf(
+                                                            Color.Transparent,
+                                                            MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+                                                        ),
+                                                        startY = 0f,
+                                                        endY = 330f
+                                                    )
+                                                )
+                                        )
+                                    }
+                                }
+
+                                // Кнопка разворачивания
+                                if (book.subject_people.size > 6) {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        TextButton(
+                                            onClick = { isExpandedPeople = !isExpandedPeople },
+                                            colors = ButtonDefaults.textButtonColors(
+                                                contentColor = MaterialTheme.colorScheme.secondary
+                                            ),
+                                            shape = RoundedCornerShape(12.dp)
+                                        ) {
+                                            Text(
+                                                text = if (isExpandedPeople) "Свернуть" else "Показать всех",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Icon(
+                                                imageVector = if (isExpandedPeople) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                                contentDescription = if (isExpandedPeople) "Свернуть" else "Развернуть",
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Добавить после карточки с персонажами, перед метаданными
+                    if (book.subject_times.isNotEmpty()) {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 16.dp),
+                            shape = MaterialTheme.shapes.medium,
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            border = BorderStroke(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
+                            ),
+                            tonalElevation = 1.dp
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.tertiaryContainer),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "🕰️",
+                                            fontSize = 18.sp
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.width(12.dp))
+
+                                    Column {
+                                        Text(
+                                            text = "Время действия",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                        )
+                                        Text(
+                                            text = book.subject_times.joinToString(", "),
+                                            style = MaterialTheme.typography.bodyMedium.copy(
+                                                fontWeight = FontWeight.Medium
+                                            ),
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+
+                                // Индикатор количества (если есть несколько значений)
+                                if (book.subject_times.size > 1) {
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f))
+                                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                                    ) {
+                                        Text(
+                                            text = "${book.subject_times.size}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.tertiary,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    // Добавить перед последним Spacer
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 16.dp)
+                    ) {
+                        Divider(
+                            modifier = Modifier.padding(bottom = 16.dp),
+                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            // Создание
+                            Column(
+                                horizontalAlignment = Alignment.Start
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.DateRange,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Создана",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    )
+                                }
+                                Text(
+                                    text = formatOpenLibraryDate(book.created.value),
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        fontWeight = FontWeight.Medium
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                                )
+                            }
+
+                            // Обновление
+                            Column(
+                                horizontalAlignment = Alignment.End
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Edit,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Обновлена",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    )
+                                }
+                                Text(
+                                    text = formatOpenLibraryDate(book.last_modified.value),
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        fontWeight = FontWeight.Medium
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                                )
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -570,8 +1220,3 @@ fun BookDetailScreen(
         }
     }
 }
-
-
-
-
-
