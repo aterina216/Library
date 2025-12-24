@@ -314,25 +314,38 @@ fun BookDetailScreen(
         },
         floatingActionButton = {
             if (fabVisible) {
-                Row(
+                Column(
                     modifier = Modifier.padding(end = 16.dp, bottom = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.End
                 ) {
 
-                    androidx.compose.material3.FloatingActionButton(
+                    androidx.compose.material3.ExtendedFloatingActionButton(
                         onClick = {
                             currentBook?.let { book ->
                                 shareBook(context, book)
                             }
-                        }
-                    ) {
-                        Icon(
-                            Icons.Filled.Share,
-                            contentDescription = "Поделиться",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    androidx.compose.material3.FloatingActionButton(
+                        },
+                        icon = {
+                            Icon(
+                                Icons.Filled.Share,
+                                contentDescription = "Поделиться",
+                                modifier = Modifier.size(20.dp)
+                            )
+                        },
+                        text = {
+                            Text(
+                                "Поделиться",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                        },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.shadow(4.dp, RoundedCornerShape(16.dp))
+                    )
+
+                    androidx.compose.material3.ExtendedFloatingActionButton(
                         onClick = {
                             Log.d(
                                 "Download",
@@ -368,25 +381,48 @@ fun BookDetailScreen(
                                 Toast.makeText(context, "Обложка недоступна", Toast.LENGTH_SHORT)
                                     .show()
                             }
-                        }
-                    ) {
-                        Image(
-                            painter = painterResource(id = com.example.library.R.drawable.download),
-                            contentDescription = "Скачать",
-                            modifier = Modifier.size(24.dp),
-                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
-                        )
-                    }
-                    if (visibleDateIcon) {
-                        androidx.compose.material3.FloatingActionButton(
-                            onClick = { showDatePicker = true }
-                        ) {
-                            Icon(
-                                Icons.Default.DateRange,
-                                contentDescription = "Напомнить",
-                                tint = MaterialTheme.colorScheme.primary
+                        },
+                        icon = {
+                            Image(
+                                painter = painterResource(id = com.example.library.R.drawable.download),
+                                contentDescription = "Скачать",
+                                modifier = Modifier.size(20.dp),
+                                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary)
                             )
-                        }
+                        },
+                        text = {
+                            Text(
+                                "Скачать обложку",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                        },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.shadow(4.dp, RoundedCornerShape(16.dp))
+                    )
+
+                    if (visibleDateIcon) {
+                        androidx.compose.material3.ExtendedFloatingActionButton(
+                            onClick = { showDatePicker = true },
+                            icon = {
+                                Icon(
+                                    Icons.Default.DateRange,
+                                    contentDescription = "Напомнить",
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            },
+                            text = {
+                                Text(
+                                    "Установить напоминание",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            },
+                            containerColor = MaterialTheme.colorScheme.primary.copy(),
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.shadow(4.dp, RoundedCornerShape(16.dp))
+                        )
                     }
                 }
             }
