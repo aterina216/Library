@@ -138,12 +138,17 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.core.app.ActivityCompat
 import com.example.library.data.mapper.BookMapper.getSafeDescription
+import com.example.library.ui.components.DatePickerDialog
+import com.example.library.ui.components.TimePickerDialog
 import com.example.library.ui.states.DownloadState
 import com.example.library.utils.BookSharingUtils.shareBook
 import com.example.library.utils.DownloadCover.startDownload
 import com.example.library.utils.FormatterDate.formatOpenLibraryDate
 import com.example.library.utils.PermissionHelper
 import com.example.library.utils.PermissionHelper.showPermissionRationale
+import com.example.library.utils.Reminder.scheduleBookReminder
+import java.time.LocalDate
+import java.time.LocalTime
 
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -166,15 +171,25 @@ fun BookDetailScreen(
 
     val downloadState = remember { DownloadState() }
 
+    var fabVisible by remember { mutableStateOf(true) }
+    var previousScroll by remember { mutableStateOf(0) }
+
+    var visibleDateIcon by remember { mutableStateOf(false) }
+
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+
+    var selectedDate by remember {mutableStateOf<LocalDate?>(null)}
+    var selectedTime by remember {mutableStateOf<LocalTime?>(null)}
+
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) {
-        permissions ->
+    ) { permissions ->
         Log.d("Download", "Результат разрешений: $permissions")
         val allGranted = permissions[Manifest.permission.WRITE_EXTERNAL_STORAGE] == true
-        if(allGranted) {
+        if (allGranted) {
             Log.d("Download", "Все разрешения получены, начинаю загрузку")
-            currentBook?.let {book ->
+            currentBook?.let { book ->
                 val coverId = book.covers.firstOrNull()
                 if (coverId != null) {
                     startDownload(
@@ -183,16 +198,21 @@ fun BookDetailScreen(
                         coverId = coverId,
                         downloadState = downloadState
                     )
-                }
-                else {
+                } else {
                     downloadState.downLoadError = "Обложка недоступна"
                 }
             }
-        }
-        else {
+        } else {
             Log.d("Download", "Не все разрешения предоставлены")
             showPermissionRationale(context)
             downloadState.downLoadError = "Разрешения не предоставлены"
+        }
+    }
+
+    LaunchedEffect(currentShelfStatus) {
+        when (currentShelfStatus) {
+            "want_to_read" -> visibleDateIcon = true
+            else -> visibleDateIcon = false
         }
     }
 
@@ -205,10 +225,28 @@ fun BookDetailScreen(
         Log.d("BookDetailScreen", "Статус книги обновлен: $currentShelfStatus")
     }
 
+    LaunchedEffect(scrollState.value) {
+        val currentScroll = scrollState.value
+        val scrollingDown = currentScroll > previousScroll
 
-    if(currentBook == null) {
-        Box(modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center) {
+        // Если скроллим вниз и проскроллили больше 50px - скрываем
+        if (scrollingDown && currentScroll > 50) {
+            fabVisible = false
+        }
+        // Если скроллим вверх - показываем
+        else if (!scrollingDown) {
+            fabVisible = true
+        }
+
+        previousScroll = currentScroll
+    }
+
+
+    if (currentBook == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
@@ -233,8 +271,8 @@ fun BookDetailScreen(
     }
 
     val authorsText = remember(book.authors) {
-        book.authors.joinToString(", ") {
-                author -> author.author.key.substringAfterLast("/")
+        book.authors.joinToString(", ") { author ->
+            author.author.key.substringAfterLast("/")
         }
     }
 
@@ -275,67 +313,118 @@ fun BookDetailScreen(
             )
         },
         floatingActionButton = {
-            Row (modifier = Modifier.padding(end = 16.dp, bottom = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-
-                androidx.compose.material3.FloatingActionButton(
-                    onClick = {
-                        currentBook?.let {book->
-                            shareBook(context, book)
-                        }
-                    }
+            if (fabVisible) {
+                Row(
+                    modifier = Modifier.padding(end = 16.dp, bottom = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Icon(Icons.Filled.Share, contentDescription = "Поделиться", tint = MaterialTheme.colorScheme.primary)
-                }
-                androidx.compose.material3.FloatingActionButton(
-                    onClick = {
-                        Log.d("Download", "Нажата кнопка загрузки, coverId = ${currentBook?.covers?.firstOrNull()}")
-                        val coverId = currentBook?.covers?.firstOrNull()
-                        if (coverId != null) {
-                            // Простой прямой вызов без сложной логики
-                            if (PermissionHelper.hasStoragePermission(context)) {
-                                Log.d("Download", "Разрешения уже есть, начинаю загрузку")
-                                startDownload(
-                                    context = context,
-                                    bookTitle = currentBook!!.title ?: "Book",
-                                    coverId = coverId,
-                                    downloadState = downloadState
-                                )
-                            } else {
-                                Log.d("Download", "Запрашиваю разрешения")// Просто запрашиваем разрешения
-                                if (ActivityCompat.shouldShowRequestPermissionRationale(
-                                        context as Activity,
-                                        Manifest.permission.WRITE_EXTERNAL_STORAGE
-                                    )) {
-                                    showPermissionRationale(context)
-                                } else {
-                                    permissionLauncher.launch(PermissionHelper.getRequiredPermissions())
-                                }
+
+                    androidx.compose.material3.FloatingActionButton(
+                        onClick = {
+                            currentBook?.let { book ->
+                                shareBook(context, book)
                             }
-                        } else {
-                            Log.d("Download", "Нет coverId, обложка недоступна")
-                            Toast.makeText(context, "Обложка недоступна", Toast.LENGTH_SHORT).show()
+                        }
+                    ) {
+                        Icon(
+                            Icons.Filled.Share,
+                            contentDescription = "Поделиться",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    androidx.compose.material3.FloatingActionButton(
+                        onClick = {
+                            Log.d(
+                                "Download",
+                                "Нажата кнопка загрузки, coverId = ${currentBook?.covers?.firstOrNull()}"
+                            )
+                            val coverId = currentBook?.covers?.firstOrNull()
+                            if (coverId != null) {
+                                if (PermissionHelper.hasStoragePermission(context)) {
+                                    Log.d("Download", "Разрешения уже есть, начинаю загрузку")
+                                    startDownload(
+                                        context = context,
+                                        bookTitle = currentBook!!.title ?: "Book",
+                                        coverId = coverId,
+                                        downloadState = downloadState
+                                    )
+                                } else {
+                                    Log.d(
+                                        "Download",
+                                        "Запрашиваю разрешения"
+                                    )// Просто запрашиваем разрешения
+                                    if (ActivityCompat.shouldShowRequestPermissionRationale(
+                                            context as Activity,
+                                            Manifest.permission.WRITE_EXTERNAL_STORAGE
+                                        )
+                                    ) {
+                                        showPermissionRationale(context)
+                                    } else {
+                                        permissionLauncher.launch(PermissionHelper.getRequiredPermissions())
+                                    }
+                                }
+                            } else {
+                                Log.d("Download", "Нет coverId, обложка недоступна")
+                                Toast.makeText(context, "Обложка недоступна", Toast.LENGTH_SHORT)
+                                    .show()
+                            }
+                        }
+                    ) {
+                        Image(
+                            painter = painterResource(id = com.example.library.R.drawable.download),
+                            contentDescription = "Скачать",
+                            modifier = Modifier.size(24.dp),
+                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
+                        )
+                    }
+                    if (visibleDateIcon) {
+                        androidx.compose.material3.FloatingActionButton(
+                            onClick = { showDatePicker = true }
+                        ) {
+                            Icon(
+                                Icons.Default.DateRange,
+                                contentDescription = "Напомнить",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
-                ) {
-                    Image(
-                        painter = painterResource(id = com.example.library.R.drawable.download),
-                        contentDescription = "Скачать",
-                        modifier = Modifier.size(24.dp),
-                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
-                    )
-                }
-
-                androidx.compose.material3.FloatingActionButton(
-                    onClick = {}
-                ) {
-                    Icon(Icons.Default.DateRange, contentDescription = "Напомнить", tint = MaterialTheme.colorScheme.primary)
                 }
             }
+
         },
-
-
     ) { PaddingValues ->
+        DatePickerDialog(
+            showDialog = showDatePicker,
+            onDismiss = { showDatePicker = false },
+            onDateSelected = { date ->
+                selectedDate = date
+                showDatePicker = false
+                showTimePicker = true
+            }
+        )
+
+        TimePickerDialog(
+            showDialog = showTimePicker,
+            onDismiss = { showTimePicker = false },
+            onTimeSelected = { time ->
+                selectedTime = time
+
+                if (selectedDate != null && currentBook != null) {
+
+                    val success = scheduleBookReminder(context, selectedDate!!, selectedTime!!, currentBook!!)
+
+                    if (success) {
+                        Toast.makeText(context, "Напоминание установлено!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "Не удалось установить напоминание", Toast.LENGTH_SHORT).show()
+                    }
+
+                    selectedDate = null
+                    selectedTime = null
+                }
+            }
+        )
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -758,24 +847,38 @@ fun BookDetailScreen(
                                             val tagColor = when {
                                                 subject.contains("fiction", ignoreCase = true) ->
                                                     MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+
                                                 subject.contains("author", ignoreCase = true) ->
                                                     MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)
+
                                                 subject.contains("english", ignoreCase = true) ||
-                                                        subject.contains("welsh", ignoreCase = true) ->
+                                                        subject.contains(
+                                                            "welsh",
+                                                            ignoreCase = true
+                                                        ) ->
                                                     MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f)
+
                                                 subject.contains("children", ignoreCase = true) ->
                                                     Color(0xFFFFF3E0) // Светло-оранжевый
-                                                else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                                else -> MaterialTheme.colorScheme.surfaceVariant.copy(
+                                                    alpha = 0.5f
+                                                )
                                             }
 
                                             val textColor = when {
                                                 subject.contains("fiction", ignoreCase = true) ->
                                                     MaterialTheme.colorScheme.primary
+
                                                 subject.contains("author", ignoreCase = true) ->
                                                     MaterialTheme.colorScheme.secondary
+
                                                 subject.contains("english", ignoreCase = true) ||
-                                                        subject.contains("welsh", ignoreCase = true) ->
+                                                        subject.contains(
+                                                            "welsh",
+                                                            ignoreCase = true
+                                                        ) ->
                                                     MaterialTheme.colorScheme.tertiary
+
                                                 else -> MaterialTheme.colorScheme.onSurfaceVariant
                                             }
 
@@ -810,7 +913,9 @@ fun BookDetailScreen(
                                                     brush = Brush.verticalGradient(
                                                         colors = listOf(
                                                             Color.Transparent,
-                                                            MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                                                            MaterialTheme.colorScheme.surface.copy(
+                                                                alpha = 0.7f
+                                                            ),
                                                             MaterialTheme.colorScheme.surface
                                                         ),
                                                         startY = 0f,
@@ -856,7 +961,11 @@ fun BookDetailScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clip(RoundedCornerShape(12.dp))
-                                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                                        .background(
+                                            MaterialTheme.colorScheme.surfaceVariant.copy(
+                                                alpha = 0.3f
+                                            )
+                                        )
                                         .padding(12.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
@@ -892,7 +1001,9 @@ fun BookDetailScreen(
                                             Text(
                                                 text = "жанры",
                                                 style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                                color = MaterialTheme.colorScheme.onSurface.copy(
+                                                    alpha = 0.6f
+                                                )
                                             )
                                         }
                                     }
@@ -915,7 +1026,9 @@ fun BookDetailScreen(
                                             Text(
                                                 text = "авторы",
                                                 style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                                color = MaterialTheme.colorScheme.onSurface.copy(
+                                                    alpha = 0.6f
+                                                )
                                             )
                                         }
                                     }
@@ -938,7 +1051,9 @@ fun BookDetailScreen(
                                             Text(
                                                 text = "языки",
                                                 style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                                color = MaterialTheme.colorScheme.onSurface.copy(
+                                                    alpha = 0.6f
+                                                )
                                             )
                                         }
                                     }
@@ -1003,7 +1118,11 @@ fun BookDetailScreen(
                                     Box(
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(12.dp))
-                                            .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f))
+                                            .background(
+                                                MaterialTheme.colorScheme.secondary.copy(
+                                                    alpha = 0.1f
+                                                )
+                                            )
                                             .padding(horizontal = 10.dp, vertical = 4.dp)
                                     ) {
                                         Text(
@@ -1030,26 +1149,47 @@ fun BookDetailScreen(
                                     ) {
                                         book.subject_people.forEach { person ->
                                             // Очищаем имя от лишней информации
-                                            val cleanPerson = person.replace(Regex("\\(.*?\\)"), "").trim()
+                                            val cleanPerson =
+                                                person.replace(Regex("\\(.*?\\)"), "").trim()
 
                                             // Определяем цвет в зависимости от типа персонажа
                                             val backgroundColor = when {
-                                                person.contains("Fictitious character", ignoreCase = true) ->
+                                                person.contains(
+                                                    "Fictitious character",
+                                                    ignoreCase = true
+                                                ) ->
                                                     MaterialTheme.colorScheme.tertiaryContainer
-                                                person.contains("Historical figure", ignoreCase = true) ->
+
+                                                person.contains(
+                                                    "Historical figure",
+                                                    ignoreCase = true
+                                                ) ->
                                                     MaterialTheme.colorScheme.secondaryContainer
+
                                                 person.contains("Author", ignoreCase = true) ->
                                                     MaterialTheme.colorScheme.primaryContainer
-                                                else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+
+                                                else -> MaterialTheme.colorScheme.surfaceVariant.copy(
+                                                    alpha = 0.5f
+                                                )
                                             }
 
                                             val textColor = when {
-                                                person.contains("Fictitious character", ignoreCase = true) ->
+                                                person.contains(
+                                                    "Fictitious character",
+                                                    ignoreCase = true
+                                                ) ->
                                                     MaterialTheme.colorScheme.onTertiaryContainer
-                                                person.contains("Historical figure", ignoreCase = true) ->
+
+                                                person.contains(
+                                                    "Historical figure",
+                                                    ignoreCase = true
+                                                ) ->
                                                     MaterialTheme.colorScheme.onSecondaryContainer
+
                                                 person.contains("Author", ignoreCase = true) ->
                                                     MaterialTheme.colorScheme.onPrimaryContainer
+
                                                 else -> MaterialTheme.colorScheme.onSurfaceVariant
                                             }
 
@@ -1059,20 +1199,49 @@ fun BookDetailScreen(
                                                 colors = CardDefaults.cardColors(
                                                     containerColor = backgroundColor
                                                 ),
-                                                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                                                elevation = CardDefaults.cardElevation(
+                                                    defaultElevation = 1.dp
+                                                )
                                             ) {
                                                 Row(
-                                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                                    modifier = Modifier.padding(
+                                                        horizontal = 12.dp,
+                                                        vertical = 8.dp
+                                                    ),
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                     // Иконка для типа персонажа
                                                     val icon = when {
-                                                        person.contains("Fictitious character", ignoreCase = true) -> "👤"
-                                                        person.contains("Historical figure", ignoreCase = true) -> "👑"
-                                                        person.contains("Author", ignoreCase = true) -> "✍️"
-                                                        person.contains("Detective", ignoreCase = true) -> "🔍"
-                                                        person.contains("King", ignoreCase = true) -> "👑"
-                                                        person.contains("Queen", ignoreCase = true) -> "👑"
+                                                        person.contains(
+                                                            "Fictitious character",
+                                                            ignoreCase = true
+                                                        ) -> "👤"
+
+                                                        person.contains(
+                                                            "Historical figure",
+                                                            ignoreCase = true
+                                                        ) -> "👑"
+
+                                                        person.contains(
+                                                            "Author",
+                                                            ignoreCase = true
+                                                        ) -> "✍️"
+
+                                                        person.contains(
+                                                            "Detective",
+                                                            ignoreCase = true
+                                                        ) -> "🔍"
+
+                                                        person.contains(
+                                                            "King",
+                                                            ignoreCase = true
+                                                        ) -> "👑"
+
+                                                        person.contains(
+                                                            "Queen",
+                                                            ignoreCase = true
+                                                        ) -> "👑"
+
                                                         else -> "👤"
                                                     }
 
@@ -1104,7 +1273,9 @@ fun BookDetailScreen(
                                                     brush = Brush.verticalGradient(
                                                         colors = listOf(
                                                             Color.Transparent,
-                                                            MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+                                                            MaterialTheme.colorScheme.surface.copy(
+                                                                alpha = 0.8f
+                                                            )
                                                         ),
                                                         startY = 0f,
                                                         endY = 330f
@@ -1207,7 +1378,11 @@ fun BookDetailScreen(
                                     Box(
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(8.dp))
-                                            .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f))
+                                            .background(
+                                                MaterialTheme.colorScheme.tertiary.copy(
+                                                    alpha = 0.1f
+                                                )
+                                            )
                                             .padding(horizontal = 8.dp, vertical = 4.dp)
                                     ) {
                                         Text(

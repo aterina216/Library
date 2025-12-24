@@ -1,6 +1,7 @@
 package com.example.library.utils
 
 import android.Manifest
+import android.app.AlarmManager
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
@@ -9,14 +10,14 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.core.content.ContextCompat
+import androidx.core.content.getSystemService
 
 object PermissionHelper {
 
     fun hasDownLoadPermission(context: Context): Boolean {
 
         val permissions = getRequiredPermissions()
-        return permissions.all {
-            permission ->
+        return permissions.all { permission ->
             ContextCompat.checkSelfPermission(context, permission) ==
                     PackageManager.PERMISSION_GRANTED
         }
@@ -26,13 +27,12 @@ object PermissionHelper {
     fun getRequiredPermissions(): Array<String> {
         val permissions = mutableListOf<String>()
 
-        // Для Android 13+ нужны новые разрешения вместо WRITE_EXTERNAL_STORAGE
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            // Для Android 13+ используем READ_MEDIA_IMAGES для сохранения картинок
+
             permissions.add(Manifest.permission.READ_MEDIA_IMAGES)
             permissions.add(Manifest.permission.POST_NOTIFICATIONS)
         } else {
-            // Для старых версий оставляем WRITE_EXTERNAL_STORAGE
+
             permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
         }
 
@@ -61,11 +61,11 @@ object PermissionHelper {
                 context,
                 Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
-        }
-        else {
+        } else {
             true
         }
     }
+
     fun showPermissionRationale(context: Context) {
         AlertDialog.Builder(context)
             .setTitle("Требуется разрешение")
@@ -79,4 +79,14 @@ object PermissionHelper {
             .setNegativeButton("Отмена", null)
             .show()
     }
+
+    fun hasAlarmPermission(context: Context): Boolean {
+        return if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            alarmManager.canScheduleExactAlarms()
+        } else {
+            true
+        }
+    }
+
 }
