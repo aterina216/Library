@@ -1,15 +1,18 @@
 package com.example.library.ui.viewmodels
 
+import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.library.data.database.entity.BookEntity
+import com.example.library.data.database.entity.BookReminderEntity
 import com.example.library.data.mapper.BookMapper.toEntity
 import com.example.library.data.models.Book
 import com.example.library.data.models.response.BookDetailResponse
 import com.example.library.ui.BookCategory
 import com.example.library.data.repository.BookRepository
+import com.example.library.utils.Reminder.cancelBookReminder
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -70,6 +73,9 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
 
     private var booksInHistory = MutableStateFlow<List<BookEntity?>>(emptyList())
     val _booksInHistory: StateFlow<List<BookEntity?>> = booksInHistory
+
+    private var _notifications = MutableStateFlow<List<BookReminderEntity>>(emptyList())
+    val notifications: StateFlow<List<BookReminderEntity>> = _notifications
 
 
     init {
@@ -314,6 +320,88 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
             }
             catch (e: Exception) {
                 Log.e("viewmodel", "${e.message}")
+            }
+        }
+    }
+
+    fun addBookFromNotification(book: BookReminderEntity) {
+        Log.d("BookViewModel", "➕ Вызван addBookFromNotification для: ${book.bookTitle}")
+
+        viewModelScope.launch {
+            try {
+                Log.d("BookViewModel", "📝 Начинаем сохранение напоминания...")
+                val id = repository.addBookNotification(book)
+
+                if(id>0) {
+                    Log.d("BookViewModel", "✅ Напоминание успешно сохранено с ID: $id")
+
+                    val currentList = _notifications.value.toMutableList()
+                    currentList.add(book.copy(id = id))
+                    _notifications.value = currentList
+                    Log.d("BookViewModel", "📊 Обновленный список: ${_notifications.value.size} напоминаний")
+                }
+                else {
+                    Log.e("BookViewModel", "❌ Напоминание не сохранено, ID: $id")
+                }
+            }
+            catch (e: Exception) {
+                Log.e("BookViewModel", "❌ Ошибка в addBookFromNotification: ${e.message}", e)
+            }
+        }
+    }
+
+    fun getAllNotifications() {
+        viewModelScope.launch {
+            try {
+                val currenTime = System.currentTimeMillis()
+                _notifications.value = repository.getAllNotitfications().filter {
+                    it.notificationTime > currenTime
+                }
+            }
+            catch (e: Exception) {
+                Log.e("BookViewModel", "❌ Ошибка в getAllNotifications: ${e.message}", e)
+            }
+        }
+    }
+
+    fun deleteNotification(reminder: BookReminderEntity,  onCancelSystemNotification: (BookReminderEntity) -> Unit) {
+        viewModelScope.launch {
+            try {
+                Log.d("BookViewModel", "🗑️ Удаляем напоминание: ${reminder.bookTitle}")
+                onCancelSystemNotification(reminder)
+                repository.deleteNotification(reminder)
+
+                val updateList =_notifications.value.toMutableList()
+                updateList.removeAll { it.id == reminder.id }
+                _notifications.value = updateList
+
+
+                Log.d("BookViewModel", "✅ Напоминание удалено")
+            }
+            catch (e: Exception) {
+                Log.e("BookViewModel", "❌ Ошибка удаления напоминания: ${e.message}", e)
+            }
+        }
+    }
+
+    fun updateReminder(
+        oldReminder: BookReminderEntity,
+        newNotificationTime: Long,
+        newNotificationId: Int
+    ) {
+        viewModelScope.launch {
+            try {
+                val updateReminder = oldReminder.copy(
+                    notificationTime = newNotificationTime,
+                    notificationId = newNotificationId,
+                    createdAt = System.currentTimeMillis())
+
+                repository.updateNotification(updateReminder)
+                getAllNotifications()
+                Log.d("BookViewModel", "Напоминание обновлено: ${oldReminder.id}")
+            }
+            catch (e: Exception) {
+                Log.e("BookViewModel", "❌ Ошибка обновления напоминания", e)
             }
         }
     }

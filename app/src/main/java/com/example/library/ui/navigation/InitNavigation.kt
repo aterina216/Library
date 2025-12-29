@@ -1,5 +1,7 @@
 package com.example.library.ui.navigation
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -19,8 +21,10 @@ import com.example.library.ui.screens.BookDetailScreen
 import com.example.library.ui.screens.HistoryScreen
 import com.example.library.ui.screens.HomeScreen
 import com.example.library.ui.screens.MyBookShelfScreen
+import com.example.library.ui.screens.NotificationsScreen
 import com.example.library.ui.viewmodels.BookViewModel
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun InitNavigation(viewModel: BookViewModel) {
 
@@ -62,6 +66,9 @@ fun InitNavigation(viewModel: BookViewModel) {
                     navigationController,
                     viewModel
                 )
+            }
+            composable("notifications") {
+                NotificationsScreen(viewModel)
             }
         }
     }

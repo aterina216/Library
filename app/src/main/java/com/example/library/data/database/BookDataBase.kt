@@ -6,8 +6,10 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.library.data.database.dao.BookDao
 import com.example.library.data.database.entity.BookEntity
+import com.example.library.data.database.entity.BookReminderEntity
+import com.example.library.utils.Reminder
 
-@Database(entities = [BookEntity::class], exportSchema = false, version = 4)
+@Database(entities = [BookEntity::class, BookReminderEntity::class], exportSchema = false, version = 5)
 abstract class BookDataBase: RoomDatabase() {
 
     abstract fun getDao(): BookDao

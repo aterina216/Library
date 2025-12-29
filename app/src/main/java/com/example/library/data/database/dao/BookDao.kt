@@ -4,9 +4,11 @@ import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
+import androidx.room.OnConflictStrategy.Companion.REPLACE
 import androidx.room.Query
 import androidx.room.Update
 import com.example.library.data.database.entity.BookEntity
+import com.example.library.data.database.entity.BookReminderEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -49,4 +51,24 @@ interface BookDao {
     @Query("UPDATE books SET viewAt = 0 WHERE viewAt > 0")
     suspend fun clearHistory()
 
+    @Query("SELECT * FROM book_reminders")
+    suspend fun getAllNotifications(): List<BookReminderEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertNotificationBook(bookReminderEntity: BookReminderEntity): Long
+
+    @Delete
+    suspend fun deleteNotificationBook(bookReminderEntity: BookReminderEntity)
+
+    @Update
+    suspend fun updateNotificationBook(bookReminderEntity: BookReminderEntity)
+
+    @Query("SELECT COUNT(*) FROM book_reminders")
+    suspend fun getNotificationsCount(): Int
+
+    @Query("DELETE FROM book_reminders WHERE id = :reminderID")
+    suspend fun deleteNotificationById(reminderID: Long)
+
+    @Query("DELETE FROM book_reminders WHERE book_id = :bookId")
+    suspend fun deleteNotificationsByBookId(bookId: String)
 }

@@ -1,12 +1,14 @@
 package com.example.library
 
 import android.app.Application
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -28,6 +30,7 @@ class MainActivity : ComponentActivity() {
     lateinit var factory: ViewModelFactory
     val viewModel: BookViewModel by viewModels { factory }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
 
         (application as BooksApp).appComponent.inject(this)
@@ -35,9 +38,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-
             LibraryTheme { InitNavigation(viewModel) }
-
         }
     }
 }

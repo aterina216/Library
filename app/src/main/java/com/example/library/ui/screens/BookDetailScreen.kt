@@ -137,6 +137,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.core.app.ActivityCompat
+import com.example.library.data.database.entity.BookReminderEntity
 import com.example.library.data.mapper.BookMapper.getSafeDescription
 import com.example.library.ui.components.DatePickerDialog
 import com.example.library.ui.components.TimePickerDialog
@@ -447,7 +448,7 @@ fun BookDetailScreen(
 
                 if (selectedDate != null && currentBook != null) {
 
-                    val success = scheduleBookReminder(context, selectedDate!!, selectedTime!!, currentBook!!)
+                    val success = scheduleBookReminder(context, selectedDate!!, selectedTime!!, currentBook!!, viewModel)
 
                     if (success) {
                         Toast.makeText(context, "Напоминание установлено!", Toast.LENGTH_SHORT).show()

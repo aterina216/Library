@@ -7,10 +7,12 @@ import com.example.library.data.api.ApiBookService
 import com.example.library.data.database.BookDataBase
 import com.example.library.data.database.dao.BookDao
 import com.example.library.data.database.entity.BookEntity
+import com.example.library.data.database.entity.BookReminderEntity
 import com.example.library.data.mapper.BookMapper.toEntity
 import com.example.library.data.models.response.BookDetailResponse
 import com.example.library.data.models.response.OpenLibraryResponse
 import com.example.library.ui.BookCategory
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 
 class BookRepository(
@@ -80,8 +82,7 @@ class BookRepository(
         try {
             val book = api.getBookById(bookId)
             return book
-        }
-        catch (e: Exception) {
+        } catch (e: Exception) {
             Log.e("repo", "${e.message}")
             return null
         }
@@ -149,8 +150,7 @@ class BookRepository(
     suspend fun getViewHistory(): List<BookEntity> {
         return try {
             db.getDao().getBooksByViewTime()
-        }
-        catch (e: Exception) {
+        } catch (e: Exception) {
             emptyList()
         }
     }
@@ -158,9 +158,69 @@ class BookRepository(
     suspend fun clearHistory() {
         try {
             db.getDao().clearHistory()
+        } catch (e: Exception) {
+            Log.e("repo", "${e.message}")
+        }
+    }
+
+    suspend fun addBookNotification(reminderEntity: BookReminderEntity): Long {
+        Log.d("BookRepository", "📝 Начинаем добавление напоминания в БД")
+        Log.d(
+            "BookRepository",
+            "📖 Данные напоминания: ${reminderEntity.bookTitle}, время: ${reminderEntity.notificationTime}, ID книги: ${reminderEntity.bookId}"
+        )
+
+        return try {
+            val id = db.getDao().insertNotificationBook(reminderEntity)
+            Log.d("BookRepository", "✅ Напоминание добавлено в БД с ID: $id")
+
+            // Проверяем, что запись действительно добавлена
+            val count = db.getDao().getNotificationsCount()
+            Log.d("BookRepository", "📊 Всего напоминаний в БД: $count")
+
+            id
+        } catch (e: Exception) {
+            Log.e("BookRepository", "❌ Ошибка добавления напоминания в БД: ${e.message}", e)
+            -1L
+        } as Long
+    }
+
+    suspend fun getAllNotitfications(): List<BookReminderEntity> {
+        try {
+            val booksNotifications = db.getDao().getAllNotifications()
+            return booksNotifications
         }
         catch (e: Exception) {
-            Log.e("repo", "${e.message}")
+            return emptyList()
+        }
+    }
+
+    suspend fun deleteNotification(bookReminderEntity: BookReminderEntity) {
+        try {
+            db.getDao().deleteNotificationBook(bookReminderEntity)
+        }
+        catch (e: Exception) {
+            Log.e("BookRepository", "❌ Ошибка удаления напоминания из БД: ${e.message}", e)
+        }
+    }
+
+    suspend fun deleteNotificationById(reminderId: Long) {
+        try {
+            db.getDao().deleteNotificationById(reminderId)
+            Log.d("BookRepository", "✅ Напоминание удалено из БД, ID: $reminderId")
+        }
+        catch (e: Exception) {
+            Log.e("BookRepository", "❌ Ошибка удаления напоминания: ${e.message}", e)
+        }
+    }
+
+    suspend fun updateNotification(bookReminderEntity: BookReminderEntity) {
+        try {
+            db.getDao().updateNotificationBook(bookReminderEntity)
+            Log.d("BookRepository", "Напоминание обновлено: ${bookReminderEntity.id}")
+        }
+        catch (e: Exception) {
+            Log.e("BookRepository", "Ошибка обновления напоминания", e)
         }
     }
 }
