@@ -30,3 +30,12 @@ val DarkAccent = Color(0xFFFFB74D)
 
 val LightBottomBar = Color(0xFFD3CEE3)    // Бар светлее фона, но темнее основного фона
 val DarkBottomBar = Color(0xFF1A1638)       // Бар темнее основного фона в темной теме
+
+val Dark = Color(0xFF4A5568)
+
+val Light = Color(0xFFCBD5E0)
+
+val Yellow = Color(0xFFF6AD55)
+
+val YelowAccent  = Color(0xFFFDB813)
+

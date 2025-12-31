@@ -14,7 +14,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.library.ui.navigation.InitNavigation
@@ -30,6 +34,9 @@ class MainActivity : ComponentActivity() {
     lateinit var factory: ViewModelFactory
     val viewModel: BookViewModel by viewModels { factory }
 
+    private var isDarkTheme by mutableStateOf(false)
+
+
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -37,9 +44,25 @@ class MainActivity : ComponentActivity() {
 
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val prefs = getSharedPreferences("app_settings", MODE_PRIVATE)
+        isDarkTheme = prefs.getBoolean("dark_theme", false)
+
+        Log.d("ThemeDebug", "Загружена тема: $isDarkTheme")
+
+
         setContent {
-            LibraryTheme { InitNavigation(viewModel) }
+            LibraryTheme(
+                darkTheme = isDarkTheme,
+                dynamicColor = true
+            ) { InitNavigation(viewModel, ::updateTheme) }
         }
+    }
+
+    private fun updateTheme(isDark: Boolean) {
+        isDarkTheme = isDark
+        getSharedPreferences("app_settings", MODE_PRIVATE).edit().putBoolean("dark_theme", isDark).apply()
+        Log.d("ThemeDebug", "Тема изменена на: $isDark")
     }
 }
 

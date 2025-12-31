@@ -92,6 +92,15 @@ fun BottomBar(navController: NavController) {
                 selectedColor = selectedColor,
                 unselectedColor = unselectedColor
             )
+
+            BottomBarItem(
+                icon = R.drawable.outline_settings_24,
+                label = "Настройки",
+                isSelected = currentRoute == "settings",
+                onClick = { navController.navigate("settings") },
+                selectedColor = selectedColor,
+                unselectedColor = unselectedColor
+            )
         }
     }
 }

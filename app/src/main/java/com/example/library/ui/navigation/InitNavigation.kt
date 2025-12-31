@@ -22,11 +22,13 @@ import com.example.library.ui.screens.HistoryScreen
 import com.example.library.ui.screens.HomeScreen
 import com.example.library.ui.screens.MyBookShelfScreen
 import com.example.library.ui.screens.NotificationsScreen
+import com.example.library.ui.screens.SettingsScreen
 import com.example.library.ui.viewmodels.BookViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun InitNavigation(viewModel: BookViewModel) {
+fun InitNavigation(viewModel: BookViewModel,
+                   onThemeChange: ((Boolean) -> Unit)? = null) {
 
     val navigationController = rememberNavController()
     val navBackStackEntry by navigationController.currentBackStackEntryAsState()
@@ -69,6 +71,10 @@ fun InitNavigation(viewModel: BookViewModel) {
             }
             composable("notifications") {
                 NotificationsScreen(viewModel)
+            }
+
+            composable("settings") {
+                SettingsScreen(navigationController, onThemeChange)
             }
         }
     }
