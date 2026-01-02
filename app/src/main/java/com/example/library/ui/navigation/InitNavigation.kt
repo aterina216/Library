@@ -28,7 +28,10 @@ import com.example.library.ui.viewmodels.BookViewModel
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun InitNavigation(viewModel: BookViewModel,
-                   onThemeChange: ((Boolean) -> Unit)? = null) {
+                   startDestination: String,
+                   themeMode: String,
+                   onThemeChange: ((String) -> Unit)? = null,
+                   onStartScreenChange: ((String) -> Unit)? = null) {
 
     val navigationController = rememberNavController()
     val navBackStackEntry by navigationController.currentBackStackEntryAsState()
@@ -48,7 +51,7 @@ fun InitNavigation(viewModel: BookViewModel,
     {
         PaddingValues->
 
-        NavHost(navController = navigationController, startDestination = "home",
+        NavHost(navController = navigationController, startDestination = startDestination,
             modifier = Modifier.padding(PaddingValues(bottom = 0.dp))) {
             composable("home") {
                 HomeScreen(viewModel, navigationController)
@@ -74,7 +77,8 @@ fun InitNavigation(viewModel: BookViewModel,
             }
 
             composable("settings") {
-                SettingsScreen(navigationController, onThemeChange)
+                SettingsScreen(navigationController, onThemeChange,
+                    onStartScreenChange)
             }
         }
     }

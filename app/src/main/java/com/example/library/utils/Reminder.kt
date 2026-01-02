@@ -74,6 +74,14 @@ object Reminder {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
+            val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+            val notificationsEnabled = prefs.getBoolean("notifications_enabled", true)
+
+            if (!notificationsEnabled) {
+                Log.d("Notifications", "Уведомления отключены в настройках")
+                return false
+            }
+
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {

@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -34,7 +35,8 @@ class MainActivity : ComponentActivity() {
     lateinit var factory: ViewModelFactory
     val viewModel: BookViewModel by viewModels { factory }
 
-    private var isDarkTheme by mutableStateOf(false)
+    private var themeMode by mutableStateOf("system")
+    private var startDestination by mutableStateOf("home")
 
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -46,23 +48,39 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val prefs = getSharedPreferences("app_settings", MODE_PRIVATE)
-        isDarkTheme = prefs.getBoolean("dark_theme", false)
+        themeMode = prefs.getString("theme_mode", "system") ?: "system"
 
-        Log.d("ThemeDebug", "Загружена тема: $isDarkTheme")
+        val startDestination = prefs.getString("start_screen", "home") ?: "home"
 
 
         setContent {
             LibraryTheme(
-                darkTheme = isDarkTheme,
-                dynamicColor = true
-            ) { InitNavigation(viewModel, ::updateTheme) }
+                themeMode = themeMode,
+            ) { InitNavigation(viewModel, startDestination, themeMode,::updateTheme, ::updateStartScreen) }
         }
     }
 
-    private fun updateTheme(isDark: Boolean) {
-        isDarkTheme = isDark
-        getSharedPreferences("app_settings", MODE_PRIVATE).edit().putBoolean("dark_theme", isDark).apply()
-        Log.d("ThemeDebug", "Тема изменена на: $isDark")
+    private fun updateTheme(mode: String) { // Изменено с Boolean на String
+        themeMode = mode
+        applyThemeMode(mode)
+        getSharedPreferences("app_settings", MODE_PRIVATE)
+            .edit()
+            .putString("theme_mode", mode)
+            .apply()
+        Log.d("ThemeDebug", "Тема изменена на: $mode")
+    }
+
+    private fun updateStartScreen(screen: String) {
+        startDestination = screen
+        getSharedPreferences("app_settings", MODE_PRIVATE).edit().putString("start_screen", screen).apply()
+    }
+
+    private fun applyThemeMode(mode: String) {
+        when (mode) {
+            "light" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+            "dark" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+            else -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+        }
     }
 }
 

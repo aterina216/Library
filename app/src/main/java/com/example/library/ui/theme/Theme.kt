@@ -2,7 +2,11 @@ package com.example.library.ui.theme
 
 import android.app.Activity
 import android.os.Build
+import android.util.Log
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
@@ -11,6 +15,12 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -18,7 +28,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.library.ui.components.circularReveal
 import com.example.library.ui.theme.Typography
+import kotlinx.coroutines.delay
 
 private val DarkColorScheme = darkColorScheme(
     primary = DarkPrimary,
@@ -53,26 +65,63 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun LibraryTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    themeMode: String,
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+    val isDarkTheme = when (themeMode) {
+        "light" -> false
+        "dark" -> true
+        else -> isSystemInDarkTheme() // Для "system" смотрим системную настройку
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
+    val colorScheme = when {
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            if (isDarkTheme) dynamicDarkColorScheme(LocalContext.current)
+            else dynamicLightColorScheme(LocalContext.current)
+        }
+        else -> {
+            if (isDarkTheme) DarkColorScheme
+            else LightColorScheme
+        }
+    }
+
+    var isThemeRevealed by remember { mutableStateOf(true) }
+
+    var previousTheme by remember { mutableStateOf<String?>(null) }
+
+    val themeKey = remember(themeMode) {
+        "theme_${themeMode}_${System.currentTimeMillis()}"
+    }
+
+    LaunchedEffect(themeKey) {
+        Log.d("ANIMATION_DEBUG", "previousTheme: $previousTheme, themeMode: $themeMode")
+        if (previousTheme != null && previousTheme != themeMode) {
+            Log.d("ANIMATION_DEBUG", "Starting animation!")
+            isThemeRevealed = false
+            delay(500)
+            isThemeRevealed = true
+        }
+
+        previousTheme = themeMode
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .circularReveal(
+                isRevealed = isThemeRevealed,
+                animationSpec = tween(durationMillis = 1000)
+            )
     )
+    {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
 
     val Shapes = Shapes(
         extraSmall = RoundedCornerShape(4.dp),
