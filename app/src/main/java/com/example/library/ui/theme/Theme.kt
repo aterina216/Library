@@ -96,9 +96,9 @@ fun LibraryTheme(
     }
 
     LaunchedEffect(themeKey) {
-        Log.d("ANIMATION_DEBUG", "previousTheme: $previousTheme, themeMode: $themeMode")
+        /*Log.d("ANIMATION_DEBUG", "previousTheme: $previousTheme, themeMode: $themeMode")*/
         if (previousTheme != null && previousTheme != themeMode) {
-            Log.d("ANIMATION_DEBUG", "Starting animation!")
+            /*Log.d("ANIMATION_DEBUG", "Starting animation!")*/
             isThemeRevealed = false
             delay(500)
             isThemeRevealed = true

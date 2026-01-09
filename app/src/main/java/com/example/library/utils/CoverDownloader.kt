@@ -27,17 +27,17 @@ object CoverDownloader {
         onError: (String) -> Unit
         ) {
 
-        Log.d("Download", "Начинаю загрузку обложки: $bookTitle, coverId: $coverId")
+        /*Log.d("Download", "Начинаю загрузку обложки: $bookTitle, coverId: $coverId")*/
 
         if(!PermissionHelper.hasStoragePermission(context)) {
-            Log.e("Download", "Нет разрешения на хранилище")
+            /*Log.e("Download", "Нет разрешения на хранилище")*/
             onError("Необходимо разрешение на запись в хранилище")
             return
         }
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                Log.d("Download", "Загружаю изображение из сети")
+                /*Log.d("Download", "Загружаю изображение из сети")*/
                 val imageUrl = "https://covers.openlibrary.org/b/id/$coverId-L.jpg"
                 val imageData = downloadImage(imageUrl)
 
@@ -55,7 +55,7 @@ object CoverDownloader {
             }
             catch (e: Exception) {
                withContext(Dispatchers.Main) {
-                   Log.e("Download", "Ошибка загрузки: ${e.message}", e)
+                   /*Log.e("Download", "Ошибка загрузки: ${e.message}", e)*/
                    val errorMsg = when {
                        e.message?.contains("Permission") == true ->
                            "Нет разрешения на запись файлов"
@@ -111,7 +111,7 @@ object CoverDownloader {
 
         if (!picturesDir.exists()) {
             picturesDir.mkdirs()
-            Log.d("Download", "📁 Создана папка Pictures/BookCovers")
+            /*Log.d("Download", "📁 Создана папка Pictures/BookCovers")*/
         }
 
         val file = File(picturesDir, fileName)
@@ -121,7 +121,7 @@ object CoverDownloader {
             output.flush()
         }
 
-        Log.d("Download", "✅ Файл сохранен в галерею: ${file.absolutePath}")
+        /*Log.d("Download", "✅ Файл сохранен в галерею: ${file.absolutePath}")*/
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             MediaScannerConnection.scanFile(

@@ -92,7 +92,7 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
     LaunchedEffect(searchText) {
         if (searchText.isNotBlank()) {
             delay(500)
-            Log.d("HomeScreen", "⏱️ Дебаунс сработал, ищем: '$searchText'")
+            /*Log.d("HomeScreen", "⏱️ Дебаунс сработал, ищем: '$searchText'")*/
             viewModel.searchBooks(searchText)
         } else {
             viewModel.searchBooks("")
@@ -110,7 +110,7 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
             shouldLoadMore ->
             if(shouldLoadMore) {
                 if (searchText.isNotEmpty() && !isSearching && hasMoreSearch){
-                    Log.d("SearchPagination", "Догружаем следующую страницу поиска...")
+                    /*Log.d("SearchPagination", "Догружаем следующую страницу поиска...")*/
                     viewModel.loadMoreSearch()
                 }
             }
@@ -134,7 +134,7 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
         }.collect {
             shouldLoadMore ->
             if(shouldLoadMore && !isLoading && hasMore && searchText.isEmpty() && !isSearching) {
-                Log.d("Пагинация", "📖 Догружаем следующую страницу...")
+                /*Log.d("Пагинация", "📖 Догружаем следующую страницу...")*/
                 coroutineScope.launch {
                     viewModel.loadCategory(currentCategory)
                 }
@@ -150,13 +150,13 @@ fun HomeScreen(viewModel: BookViewModel, navController: NavController) {
         if (index != 0 || offset != 0) {
             coroutineScope.launch {
                 listState.scrollToItem(index, offset)
-                Log.d(
+                /*Log.d(
                     "HomeScreen",
                     "✅ Восстановлена позиция: $index / $offset для ${currentCategory.displayName}"
-                )
+                )*/
             }
         } else {
-            Log.d("HomeScreen", "↩️ Новая категория — позиция с нуля")
+            /*Log.d("HomeScreen", "↩️ Новая категория — позиция с нуля")*/
         }
     }
 

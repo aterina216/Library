@@ -67,7 +67,7 @@ class MainActivity : ComponentActivity() {
             .edit()
             .putString("theme_mode", mode)
             .apply()
-        Log.d("ThemeDebug", "Тема изменена на: $mode")
+        /*Log.d("ThemeDebug", "Тема изменена на: $mode")*/
     }
 
     private fun updateStartScreen(screen: String) {

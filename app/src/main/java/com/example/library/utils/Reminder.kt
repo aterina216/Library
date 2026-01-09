@@ -29,18 +29,18 @@ object Reminder {
         viewModel: BookViewModel? = null
     ): Boolean {
         try {
-            Log.d("Reminder", "🔔 Начинаем установку напоминания для книги: ${book.title}")
+            /*Log.d("Reminder", "🔔 Начинаем установку напоминания для книги: ${book.title}")*/
             val dateTime = LocalDateTime.of(date, time)
             val triggerAtMillis = dateTime.atZone(ZoneId.systemDefault())
                 .toInstant()
                 .toEpochMilli()
 
-            Log.d("Reminder", "📅 Выбрана дата: $dateTime")
+            /*Log.d("Reminder", "📅 Выбрана дата: $dateTime")
             Log.d("Reminder", "⏰ Timestamp: $triggerAtMillis")
-            Log.d("Reminder", "🕐 Текущее время: ${System.currentTimeMillis()}")
+            Log.d("Reminder", "🕐 Текущее время: ${System.currentTimeMillis()}")*/
 
             if(triggerAtMillis < System.currentTimeMillis()){
-                Log.w("Reminder", "Попытка установить напоминание в прошлом")
+                /*Log.w("Reminder", "Попытка установить напоминание в прошлом")*/
                 Toast.makeText(context, "Нельзя установить напоминание в прошлом",
                     Toast.LENGTH_SHORT).show()
                 return false
@@ -48,7 +48,7 @@ object Reminder {
 
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 if(!PermissionHelper.hasAlarmPermission(context)) {
-                    Log.w("Reminder", "Нет разрешения на точные будильники")
+                    /*Log.w("Reminder", "Нет разрешения на точные будильники")*/
 
                     val intent = Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -58,7 +58,7 @@ object Reminder {
             }
 
             val bookId = book.key.substringAfterLast("/")
-            Log.d("Reminder", "📖 ID книги: $bookId")
+            /*Log.d("Reminder", "📖 ID книги: $bookId")*/
 
             val intent = Intent(context, ReminderReceiver::class.java).apply {
                 putExtra("BOOK_ID", bookId)
@@ -78,7 +78,7 @@ object Reminder {
             val notificationsEnabled = prefs.getBoolean("notifications_enabled", true)
 
             if (!notificationsEnabled) {
-                Log.d("Notifications", "Уведомления отключены в настройках")
+                /*Log.d("Notifications", "Уведомления отключены в настройках")*/
                 return false
             }
 
@@ -90,7 +90,7 @@ object Reminder {
                     triggerAtMillis,
                     pendingIntent
                 )
-                Log.d("Reminder", "✅ Напоминание установлено (setExactAndAllowWhileIdle)")
+                /*Log.d("Reminder", "✅ Напоминание установлено (setExactAndAllowWhileIdle)")*/
             }
             else {
                 alarmManager.setExact(
@@ -98,7 +98,7 @@ object Reminder {
                     triggerAtMillis,
                     pendingIntent
                 )
-                Log.d("Reminder", "✅ Напоминание установлено (setExact)")
+                /*Log.d("Reminder", "✅ Напоминание установлено (setExact)")*/
             }
 
             val reminderEntity = BookReminderEntity(
@@ -113,25 +113,25 @@ object Reminder {
                 isActive = true,
                 createdAt = System.currentTimeMillis()
             )
-            Log.d("Reminder", "📝 Создан BookReminderEntity.kt: ${reminderEntity.bookTitle}")
+            /*Log.d("Reminder", "📝 Создан BookReminderEntity.kt: ${reminderEntity.bookTitle}")*/
 
 
             if (viewModel != null) {
-                Log.d("Reminder", "🔄 Передаем напоминание во ViewModel")
+                /*Log.d("Reminder", "🔄 Передаем напоминание во ViewModel")*/
                 viewModel.addBookFromNotification(reminderEntity)
             } else {
-                Log.e("Reminder", "❌ ViewModel не передан!")
+                /*Log.e("Reminder", "❌ ViewModel не передан!")*/
                 return false
             }
             return true
         }
         catch (e: SecurityException) {
-            Log.e("Reminder", "❌ Ошибка безопасности: ${e.message}", e)
+            /*Log.e("Reminder", "❌ Ошибка безопасности: ${e.message}", e)*/
             Toast.makeText(context, "Нет разрешения на установку будильника", Toast.LENGTH_SHORT).show()
             return false
         }
         catch (e: Exception) {
-            Log.e("Reminder", "❌ Ошибка установки напоминания: ${e.message}", e)
+            /*Log.e("Reminder", "❌ Ошибка установки напоминания: ${e.message}", e)*/
             Toast.makeText(context, "Ошибка установки напоминания", Toast.LENGTH_SHORT).show()
             return false
         }

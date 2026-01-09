@@ -38,7 +38,7 @@ class BookRepository(
 
             books
         } catch (e: Exception) {
-            Log.d("repo", "${e.message}")
+            /*Log.d("repo", "${e.message}")*/
             db.getDao().getBooksByCategory(category.subject)
         }
     }
@@ -48,31 +48,31 @@ class BookRepository(
         pageSize: Int = 20,
         page: Int = 1
     ): List<BookEntity> {
-        Log.d("Repository", "🔍 Ищем книги по запросу: '$query'")
+        /*Log.d("Repository", "🔍 Ищем книги по запросу: '$query'")*/
 
         try {
             if (query.isBlank() || query.length < 3) {
-                Log.d("Repository", "📭 Пустой запрос, возвращаем пустой список")
+                /*Log.d("Repository", "📭 Пустой запрос, возвращаем пустой список")*/
                 return emptyList()
             }
 
             val offset = (page - 1) * pageSize
 
             val searchResponse = api.getSearchResult(query, pageSize, offset)
-            Log.d("Repository", "📊 API вернул ${searchResponse.numFound} результатов")
+            /*Log.d("Repository", "📊 API вернул ${searchResponse.numFound} результатов")*/
             val bookList = searchResponse.docs.mapNotNull { book ->
                 try {
-                    Log.d("Repository", "🔄 Маппим книгу: ${book.title ?: "без названия"}")
+                    /*Log.d("Repository", "🔄 Маппим книгу: ${book.title ?: "без названия"}")*/
                     book.toEntity()
                 } catch (e: Exception) {
-                    Log.e("Repository", "⚠️ Не удалось смаппить книгу: $e")
+                    /*Log.e("Repository", "⚠️ Не удалось смаппить книгу: $e")*/
                     null
                 }
             }
             return bookList
         } catch (e: Exception) {
-            Log.e("Repository", "❌ Ошибка поиска: ${e.message}")
-            Log.e("Repository", "❌ Stacktrace:", e)  // Полный стектрейс
+            /*Log.e("Repository", "❌ Ошибка поиска: ${e.message}")
+            Log.e("Repository", "❌ Stacktrace:", e)  // Полный стектрейс*/
             return emptyList()
         }
     }
@@ -83,7 +83,7 @@ class BookRepository(
             val book = api.getBookById(bookId)
             return book
         } catch (e: Exception) {
-            Log.e("repo", "${e.message}")
+            /*Log.e("repo", "${e.message}")*/
             return null
         }
     }
@@ -96,11 +96,11 @@ class BookRepository(
             // Если книги нет - ВСТАВЛЯЕМ новую с нужным статусом
             val newBook = book.copy(shelfStatus = status)
             db.getDao().insertBook(newBook)
-            Log.d("Repository", "📚 Книга вставлена в БД: ${book.id}, статус: $status")
+            /*Log.d("Repository", "📚 Книга вставлена в БД: ${book.id}, статус: $status")*/
         } else {
             // Если книга есть - ОБНОВЛЯЕМ статус
             db.getDao().updateBookShelfStatus(bookID = book.id, status)
-            Log.d("Repository", "📝 Статус обновлен: ${book.id}, статус: $status")
+            /*Log.d("Repository", "📝 Статус обновлен: ${book.id}, статус: $status")*/
         }
     }
 
@@ -113,9 +113,9 @@ class BookRepository(
 
         if (existingBook != null) {
             db.getDao().updateBookShelfStatus(book.id, null)
-            Log.d("Repository", "🗑️ Статус удален: ${book.id}")
+            /*Log.d("Repository", "🗑️ Статус удален: ${book.id}")*/
         } else {
-            Log.d("Repository", "⚠️ Книги нет в БД, нечего удалять")
+            /*Log.d("Repository", "⚠️ Книги нет в БД, нечего удалять")*/
         }
     }
 

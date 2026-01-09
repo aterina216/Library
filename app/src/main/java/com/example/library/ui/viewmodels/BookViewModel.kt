@@ -79,12 +79,12 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
 
 
     init {
-        Log.d("viewmodel", "start")
+        /*Log.d("viewmodel", "start")*/
         loadCategory(BookCategory.FICTION)
     }
 
     fun loadCategory(category: BookCategory) {
-        Log.d("ViewModel", "📂 Загружаем категорию: ${category.displayName}")
+        /*Log.d("ViewModel", "📂 Загружаем категорию: ${category.displayName}")*/
         _currentCategory.value = category
 
         val isNewCategory = pageCounters[category] == null
@@ -118,9 +118,9 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
 
                 hasMore.value = books.size == pageSize
 
-                Log.d("ViewModel", "✅ Загружено ${books.size} книг для ${category.displayName}")
+                /*Log.d("ViewModel", "✅ Загружено ${books.size} книг для ${category.displayName}")*/
             } catch (e: Exception) {
-                Log.e("ViewModel", "❌ Ошибка загрузки ${category.displayName}: ${e.message}")
+                /*Log.e("ViewModel", "❌ Ошибка загрузки ${category.displayName}: ${e.message}")*/
             } finally {
                 isLoading.value = false
             }
@@ -129,10 +129,10 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
 
 
     fun searchBooks(query: String) {
-        Log.d("ViewModel", "🔍 Вызван поиск с запросом: '$query'")
+        /*Log.d("ViewModel", "🔍 Вызван поиск с запросом: '$query'")*/
 
         if (query.isBlank()) {
-            Log.d("ViewModel", "📭 Пустой запрос, очищаем результаты")
+            /*Log.d("ViewModel", "📭 Пустой запрос, очищаем результаты")*/
             searchBooks.value = emptyList()
             _isSearching.value = false
             _hasMoreSearch.value = true

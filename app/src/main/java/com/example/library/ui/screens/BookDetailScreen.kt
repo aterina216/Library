@@ -186,10 +186,10 @@ fun BookDetailScreen(
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        Log.d("Download", "Результат разрешений: $permissions")
+        /*Log.d("Download", "Результат разрешений: $permissions")*/
         val allGranted = permissions[Manifest.permission.WRITE_EXTERNAL_STORAGE] == true
         if (allGranted) {
-            Log.d("Download", "Все разрешения получены, начинаю загрузку")
+            /*Log.d("Download", "Все разрешения получены, начинаю загрузку")*/
             currentBook?.let { book ->
                 val coverId = book.covers.firstOrNull()
                 if (coverId != null) {
@@ -204,7 +204,7 @@ fun BookDetailScreen(
                 }
             }
         } else {
-            Log.d("Download", "Не все разрешения предоставлены")
+            /*Log.d("Download", "Не все разрешения предоставлены")*/
             showPermissionRationale(context)
             downloadState.downLoadError = "Разрешения не предоставлены"
         }
@@ -223,7 +223,7 @@ fun BookDetailScreen(
 
     LaunchedEffect(currentShelfStatus) {
         // Логируем для отладки
-        Log.d("BookDetailScreen", "Статус книги обновлен: $currentShelfStatus")
+        /*Log.d("BookDetailScreen", "Статус книги обновлен: $currentShelfStatus")*/
     }
 
     LaunchedEffect(scrollState.value) {
@@ -348,14 +348,14 @@ fun BookDetailScreen(
 
                     androidx.compose.material3.ExtendedFloatingActionButton(
                         onClick = {
-                            Log.d(
+                           /* Log.d(
                                 "Download",
                                 "Нажата кнопка загрузки, coverId = ${currentBook?.covers?.firstOrNull()}"
-                            )
+                            )*/
                             val coverId = currentBook?.covers?.firstOrNull()
                             if (coverId != null) {
                                 if (PermissionHelper.hasStoragePermission(context)) {
-                                    Log.d("Download", "Разрешения уже есть, начинаю загрузку")
+                                    /*Log.d("Download", "Разрешения уже есть, начинаю загрузку")*/
                                     startDownload(
                                         context = context,
                                         bookTitle = currentBook!!.title ?: "Book",
@@ -363,10 +363,10 @@ fun BookDetailScreen(
                                         downloadState = downloadState
                                     )
                                 } else {
-                                    Log.d(
+                                    /*Log.d(
                                         "Download",
                                         "Запрашиваю разрешения"
-                                    )// Просто запрашиваем разрешения
+                                    )// Просто запрашиваем разрешения*/
                                     if (ActivityCompat.shouldShowRequestPermissionRationale(
                                             context as Activity,
                                             Manifest.permission.WRITE_EXTERNAL_STORAGE
