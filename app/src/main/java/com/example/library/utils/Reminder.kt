@@ -105,7 +105,7 @@ object Reminder {
                 bookId = book.key.substringAfterLast("/"),
                 notificationTime = triggerAtMillis,
                 bookTitle = book.title ?: "Без названия",
-                bookAuthor = book.authors.joinToString(", ") {
+                bookAuthor = book.authors?.joinToString(", ") {
                     it.author.key.substringAfterLast("/")
                 },
                 coverId = book.covers.firstOrNull(),

@@ -92,4 +92,10 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation ("androidx.core:core-ktx:1.12.0")
     implementation ("androidx.appcompat:appcompat:1.6.1")
+
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testImplementation("io.mockk:mockk:1.13.8")
+    testImplementation(kotlin("test"))
 }

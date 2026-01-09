@@ -6,7 +6,7 @@ import com.example.library.data.models.LastModified
 import com.example.library.data.models.TypeX
 
 data class BookDetailResponse(
-    val authors: List<AuthorForDetail>,
+    val authors: List<AuthorForDetail>?,
     val covers: List<Int>,
     val created: Created,
     val description: Any?,

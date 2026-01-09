@@ -43,13 +43,22 @@ object BookMapper {
     }
 
     fun BookDetailResponse.toEntity(): BookEntity {
+        val authorsText = if (this.authors.isNullOrEmpty()) {
+            "Unknown author"
+        } else {
+            this.authors.joinToString(", ") {
+                it.author?.key?.substringAfterLast("/") ?: it.author?.key ?: "Unknown"
+            }
+        }
+
         return BookEntity(
             id = extractBookId(this.key),
             title = this.title ?: "No title",
-            authors = this.authors?.joinToString(", ") {
-                it.author?.key?.substringAfterLast("/") ?: "Unknown"
-            } ?: "Unknown author",
-            coverId = this.covers?.firstOrNull(),
+            /*authors = this.authors?.joinToString(", ") {
+                it.author.key?.substringAfterLast("/") ?: "Unknown"
+            } ?: "Unknown author",*/
+            authors = authorsText,
+            coverId = this.covers?.firstOrNull() ?: -1,
             firstPublishYear = null, // В BookDetailResponse нет года, можешь парсить из description если нужно
             subjects = this.subjects?.joinToString(", ") ?: "",
             description = when (val desc = this.description) {
@@ -62,8 +71,17 @@ object BookMapper {
         )
     }
 
-    private fun extractBookId(key: String): String {
+    /*private fun extractBookId(key: String): String {
         return key.substringAfterLast("/").takeIf { it.isNotEmpty() } ?: "unknown"
+    }*/
+
+    private fun extractBookId(key: String): String {
+        // Сначала удаляем URL параметры (всё после ?)
+        val withoutParams = key.substringBefore("?")
+        // Затем извлекаем ID после последнего слеша
+        val id = withoutParams.substringAfterLast("/")
+        // Проверяем, что ID не пустой
+        return id.takeIf { it.isNotEmpty() } ?: "unknown"
     }
 
     private fun extractAuthors(authors: List<AuthorForDetail>): String {

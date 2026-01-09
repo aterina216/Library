@@ -65,7 +65,7 @@ class BookRepository(
                     Log.d("Repository", "🔄 Маппим книгу: ${book.title ?: "без названия"}")
                     book.toEntity()
                 } catch (e: Exception) {
-                    Log.w("Repository", "⚠️ Не удалось смаппить книгу: $e")
+                    Log.e("Repository", "⚠️ Не удалось смаппить книгу: $e")
                     null
                 }
             }

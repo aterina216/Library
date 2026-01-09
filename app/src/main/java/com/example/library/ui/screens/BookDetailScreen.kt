@@ -272,7 +272,7 @@ fun BookDetailScreen(
     }
 
     val authorsText = remember(book.authors) {
-        book.authors.joinToString(", ") { author ->
+        book.authors?.joinToString(", ") { author ->
             author.author.key.substringAfterLast("/")
         }
     }
